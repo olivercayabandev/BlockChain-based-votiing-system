@@ -2345,6 +2345,9 @@ async def hard_reset_preflight():
 
 @app.on_event("startup")
 def startup_event():
+    # First update database schema (raw SQL for older databases)
+    ensure_columns()
+    
     # Create all tables if they don't exist (Turso/SQLite)
     Base.metadata.create_all(bind=engine)
     print("Database tables created/verified")

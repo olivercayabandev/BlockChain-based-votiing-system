@@ -210,7 +210,7 @@ class Blockchain:
             TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
             
             if not TURSO_URL:
-                logger.error("TURSO_URL not set")
+                logger.warning("TURSO_URL not set")
                 return
             
             # Convert libsql:// to https:// for HTTP-based client
@@ -313,21 +313,36 @@ class Blockchain:
             
             # Load ledger
             result = client.execute("SELECT chain_data, pending_transactions, participants, hmac FROM blockchain_ledger WHERE id = 1")
-            rows = result.rows if hasattr(result, 'rows') else result
+            
+            # Handle different response formats from libsql-client
+            rows = None
+            if hasattr(result, 'rows'):
+                rows = result.rows
+            elif isinstance(result, list):
+                rows = result
+            elif hasattr(result, '__iter__'):
+                rows = list(result)
+            
             if rows and len(rows) > 0:
                 row = rows[0]
-                chain_json, pending_json, participants_json, stored_hmac = row
-                
-                # Verify HMAC
-                if stored_hmac and calculate_file_hmac(chain_json) != stored_hmac:
-                    logger.error("HMAC mismatch - ledger may be tampered!")
-                    raise Exception("Ledger integrity check failed")
-                
-                data = json.loads(chain_json)
-                self.chain = [Block.from_dict(block_data) for block_data in data]
-                self.pending_transactions = json.loads(pending_json) if pending_json else []
-                self.participants = json.loads(participants_json) if participants_json else {}
-                
+                # row should be a list/tuple with 4 elements
+                if len(row) >= 4:
+                    chain_json = row[0]
+                    pending_json = row[1]
+                    participants_json = row[2]
+                    stored_hmac = row[3]
+                    
+                    # Verify HMAC
+                    if stored_hmac and calculate_file_hmac(chain_json) != stored_hmac:
+                        logger.error("HMAC mismatch - ledger may be tampered!")
+                        raise Exception("Ledger integrity check failed")
+                    
+                    data = json.loads(chain_json)
+                    self.chain = [Block.from_dict(block_data) for block_data in data]
+                    self.pending_transactions = json.loads(pending_json) if pending_json else []
+                    self.participants = json.loads(participants_json) if participants_json else {}
+                else:
+                    raise Exception(f"Unexpected row format: {row}")
             else:
                 # No ledger found, create genesis block
                 genesis = self.create_genesis_block()
