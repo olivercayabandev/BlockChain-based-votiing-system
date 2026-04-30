@@ -120,7 +120,6 @@ app.add_middleware(
 )
 
 
-SEMAPHORE_API_KEY = "a681bea6c14fceb1a9331"
 DEVELOPMENT_MODE = True
 
 
@@ -266,18 +265,6 @@ class VoteTransaction(Base):
     block_index = Column(Integer, nullable=True)
 
 
-class OTP(Base):
-    __tablename__ = "otps"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    phone_number = Column(String(20), nullable=False)
-    otp_code = Column(String(6), nullable=False)
-    resident_id = Column(String(50), nullable=True)
-    expires_at = Column(String(50), nullable=False)
-    used = Column(Boolean, default=False)
-    created_at = Column(String(50), default=lambda: datetime.utcnow().isoformat())
-
-
 def migrate_old_data():
     """Migrate data from old voting.db to new votechain.db"""
     old_db_path = "voting.db"
@@ -294,8 +281,8 @@ def migrate_old_data():
         old_conn = sqlite3.connect(old_db_path)
         old_cursor = old_conn.cursor()
         
-        # Get all voters
-        old_cursor.execute("SELECT resident_id, name, phone_number, is_verified, is_approved, consent_given FROM voters")
+        # Get all voters (no phone_number)
+        old_cursor.execute("SELECT resident_id, name, is_verified, is_approved, consent_given FROM voters")
         voters = old_cursor.fetchall()
         
         new_db = SessionLocal()
@@ -304,10 +291,9 @@ def migrate_old_data():
                 voter = Voter(
                     resident_id=v[0],
                     name=v[1],
-                    phone_number=v[2],
-                    is_verified=bool(v[3]),
-                    is_approved=bool(v[4]),
-                    consent_given=bool(v[5])
+                    is_verified=bool(v[2]),
+                    is_approved=bool(v[3]),
+                    consent_given=bool(v[4])
                 )
                 new_db.add(voter)
             except:
@@ -456,7 +442,6 @@ def seed_data():
             admin = Voter(
                 resident_id="ADMIN001",
                 name="Administrator",
-                phone_number="+639000000001",
                 id_type="admin",
                 id_number="ADMIN001",
                 verification_status="approved",
@@ -468,7 +453,6 @@ def seed_data():
             )
             db.add(admin)
         else:
-            admin.phone_number = "+639000000001"
             admin.id_type = "admin"
             admin.id_number = "ADMIN001"
             admin.is_verified = True
@@ -482,7 +466,6 @@ def seed_data():
             test_user = Voter(
                 resident_id="2026-0001",
                 name="Test Resident",
-                phone_number="+639123456789",
                 id_type="resident_id",
                 id_number="2026-0001",
                 verification_status="approved",
@@ -494,7 +477,6 @@ def seed_data():
             )
             db.add(test_user)
         else:
-            test_user.phone_number = "+639123456789"
             test_user.id_type = "resident_id"
             test_user.id_number = "2026-0001"
             test_user.verification_status = "approved"
@@ -603,7 +585,6 @@ class VoterRegistration(BaseModel):
 class VoterRegistrationSimple(BaseModel):
     resident_id: str
     name: str
-    phone_number: Optional[str] = None
     consent_given: bool
 
 
@@ -616,12 +597,6 @@ class VerifyVoterRequest(BaseModel):
 class LoginRequest(BaseModel):
     id_type: str = "resident_id"  # resident_id, national_id, passport, drivers_license
     id_number: str
-
-
-class OTPVerify(BaseModel):
-    resident_id: str
-    phone_number: str
-    otp_code: str
 
 
 class VoteRequest(BaseModel):
@@ -674,44 +649,6 @@ def verify_token(token: str) -> Optional[str]:
             return data["resident_id"]
     print("Token invalid or expired")  # Debug log
     return None
-
-
-def send_sms_via_semaphore(phone_number: str, message: str) -> dict:
-    try:
-        import httpx
-        
-        if DEVELOPMENT_MODE:
-            return {"status": "success", "dev_mode": True, "message": "Dev OTP: 999999"}
-        
-        clean_phone = phone_number.replace("+", "").replace(" ", "")
-        if not clean_phone.startswith("63"):
-            clean_phone = "63" + clean_phone.lstrip("0")
-        
-        url = f"https://api.semaphore.co/api/v4/messages?apikey={SEMAPHORE_API_KEY}"
-        data = {
-            "phone_number": clean_phone,
-            "message": message,
-            "sendername": "VotingSys"
-        }
-        
-        with httpx.Client(timeout=30.0) as client:
-            response = client.post(url, data=data)
-            result = response.json()
-            
-            if response.status_code == 200 and result.get("success"):
-                return {"status": "success", "message": "OTP sent successfully"}
-            else:
-                return {"status": "error", "message": result.get("message", "Failed to send SMS")}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-
-def generate_otp() -> str:
-    if DEVELOPMENT_MODE:
-        return "999999"
-    return str(secrets.randbelow(1000000)).zfill(6)
-
-
 
 
 @app.options("/api/register")
@@ -1691,60 +1628,6 @@ async def voter_set_pin(request: Request, db: SessionLocal = Depends(get_db)):
     }
 
 
-@app.post("/api/verify-otp")
-def verify_otp(request: OTPVerify, db: SessionLocal = Depends(get_db)):
-    voter = db.query(Voter).filter(
-        Voter.resident_id == request.resident_id,
-        Voter.phone_number == request.phone_number
-    ).first()
-    
-    if not voter:
-        raise HTTPException(status_code=404, detail="Voter not found")
-    
-    # Development mode bypass - accept 999999 without OTP validation
-    if DEVELOPMENT_MODE and request.otp_code == "999999":
-        # Create token directly
-        token = create_token(request.resident_id)
-        gas_balance = blockchain.get_gas_balance(request.resident_id)
-        
-        return {
-            "token": token,
-            "resident_id": request.resident_id,
-            "name": voter.name,
-            "gas_balance": gas_balance,
-            "message": "Login successful (dev mode)"
-        }
-    
-    # Normal OTP validation
-    otp_record = db.query(OTP).filter(
-        OTP.phone_number == request.phone_number,
-        OTP.otp_code == request.otp_code,
-        OTP.used == False,
-        OTP.resident_id == request.resident_id
-    ).order_by(OTP.created_at.desc()).first()
-    
-    if not otp_record:
-        raise HTTPException(status_code=400, detail="Invalid OTP")
-    
-    if otp_record.expires_at and datetime.fromisoformat(otp_record.expires_at) < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="OTP expired")
-    
-    otp_record.used = True
-    db.commit()
-    
-    token = create_token(request.resident_id)
-    
-    gas_balance = blockchain.get_gas_balance(request.resident_id)
-    
-    return {
-        "token": token,
-        "resident_id": request.resident_id,
-        "name": voter.name,
-        "gas_balance": gas_balance,
-        "message": "Login successful"
-    }
-
-
 @app.get("/api/candidates")
 def get_candidates(db: SessionLocal = Depends(get_db)):
     candidates = db.query(Candidate).all()
@@ -2493,7 +2376,6 @@ def reset_test_accounts():
         # Reset admin
         admin = db.query(Voter).filter(Voter.resident_id == "ADMIN001").first()
         if admin:
-            admin.phone_number = "+639000000001"
             admin.is_verified = True
             admin.is_approved = True
             admin.name = "Administrator"
@@ -2504,14 +2386,12 @@ def reset_test_accounts():
             test_user = Voter(
                 resident_id="2026-0001",
                 name="Test Resident",
-                phone_number="+639123456789",
                 is_verified=True,
                 is_approved=True,
                 consent_given=True
             )
             db.add(test_user)
         else:
-            test_user.phone_number = "+639123456789"
             test_user.is_verified = True
             test_user.is_approved = True
             test_user.name = "Test Resident"
@@ -2524,7 +2404,7 @@ def reset_test_accounts():
             blockchain.add_participant('ADMIN001', 10.0)
         if not any(p['resident_id'] == '2026-0001' for p in blockchain.participants):
             blockchain.add_participant('2026-0001', 1.0)
-        blockchain.save_to_disk()
+        blockchain.save_to_db()
         
         return {"message": "Test accounts reset successfully"}
     finally:

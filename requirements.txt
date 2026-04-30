@@ -5,4 +5,4 @@ python-dotenv==1.0.0
 pydantic==2.7.0
 sqlalchemy==2.0.25
 bcrypt==4.1.2
-requests==2.31.0
+# requests==2.31.0  # Uncomment if using test_setup.py
