@@ -1,0 +1,24 @@
+{
+  "chain": [
+    {
+      "index": 0,
+      "timestamp": 1777543814.892468,
+      "timestamp_readable": "2026-04-30 18:10:14",
+      "transactions": [
+        {
+          "type": "genesis",
+          "data": "Genesis Block - Blockchain Voting System Initialized",
+          "timestamp": 1777543814.892469
+        }
+      ],
+      "previous_hash": "0",
+      "nonce": 0,
+      "hash": "f4e5ac71a0d3f21fa9af7c6fc581b4f5f8f3e43a58bfbb78743b481b59bb0657"
+    }
+  ],
+  "pending_transactions": [],
+  "participants": {
+    "ADMIN001": 10.0,
+    "2026-0001": 1.0
+  }
+}

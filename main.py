@@ -314,7 +314,12 @@ def migrate_old_data():
 def ensure_columns():
     """Ensure all required columns exist in the database"""
     try:
-        conn = sqlite3.connect("votechain.db")
+        # Use the same database as SQLAlchemy engine
+        db_path = "votechain.db"  # Default SQLite file
+        if DATABASE_URL.startswith("sqlite:///"):
+            db_path = DATABASE_URL.replace("sqlite:///", "")
+        
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
         # Check existing columns
@@ -341,7 +346,7 @@ def ensure_columns():
             "pin_setup_expires": ("ALTER TABLE voters ADD COLUMN pin_setup_expires TEXT", False),
             "gas_balance": ("ALTER TABLE voters ADD COLUMN gas_balance FLOAT DEFAULT 1.0", False),
         }
-
+        
         def add_column_if_not_exists(table, column, sql):
             try:
                 cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {sql}")
@@ -2352,8 +2357,11 @@ def startup_event():
     ensure_columns()
     
     # Create all tables if they don't exist (Turso/SQLite)
-    Base.metadata.create_all(bind=engine)
-    print("Database tables created/verified")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created/verified")
+    except Exception as e:
+        print(f"Warning: Could not create tables via SQLAlchemy: {e}")
     
     # Initialize blockchain (now stored in DB instead of ledger.json)
     # No need to load_from_disk() anymore
@@ -2367,6 +2375,8 @@ def startup_event():
             if v.resident_id not in blockchain.participants:
                 blockchain.participants[v.resident_id] = v.gas_balance
         # No need to save_to_disk() - blockchain now uses DB
+    except Exception as e:
+        print(f"Error syncing blockchain participants: {e}")
     finally:
         db.close()
 

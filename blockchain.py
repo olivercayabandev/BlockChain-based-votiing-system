@@ -203,6 +203,7 @@ class Blockchain:
     
     def save_to_db(self):
         """Save blockchain data to Turso database"""
+        client = None
         try:
             from libsql_client import create_client_sync
             
@@ -246,7 +247,7 @@ class Blockchain:
                 )
             """)
             
-            # Upsert into blockchain_ledger table
+            # Upsert into blockchain_ledger table (fixed: added commas between column names)
             client.execute("""
                 INSERT OR REPLACE INTO blockchain_ledger 
                 (id, chain_data, pending_transactions, participants, hmac, updated_at) 
@@ -258,12 +259,17 @@ class Blockchain:
                 hmac_val
             ])
             
-            client.close()
             logger.info("Ledger saved to Turso DB (%s blocks)", len(self.chain))
             
         except Exception as e:
             logger.error(f"Failed to save to Turso: {e}")
             self._save_fallback()
+        finally:
+            if client:
+                try:
+                    client.close()
+                except:
+                    pass
     
     def _save_fallback(self):
         """Fallback to local JSON if Turso fails"""
@@ -278,6 +284,7 @@ class Blockchain:
     
     def load_from_db(self):
         """Load blockchain data from Turso database"""
+        client = None
         try:
             from libsql_client import create_client_sync
             
@@ -326,23 +333,30 @@ class Blockchain:
             if rows and len(rows) > 0:
                 row = rows[0]
                 # row should be a list/tuple with 4 elements
-                if len(row) >= 4:
+                if isinstance(row, dict):
+                    # If row is a dict, access by column name
+                    chain_json = row.get('chain_data')
+                    pending_json = row.get('pending_transactions')
+                    participants_json = row.get('participants')
+                    stored_hmac = row.get('hmac')
+                elif len(row) >= 4:
+                    # If row is a list/tuple, access by index
                     chain_json = row[0]
                     pending_json = row[1]
                     participants_json = row[2]
                     stored_hmac = row[3]
-                    
-                    # Verify HMAC
-                    if stored_hmac and calculate_file_hmac(chain_json) != stored_hmac:
-                        logger.error("HMAC mismatch - ledger may be tampered!")
-                        raise Exception("Ledger integrity check failed")
-                    
-                    data = json.loads(chain_json)
-                    self.chain = [Block.from_dict(block_data) for block_data in data]
-                    self.pending_transactions = json.loads(pending_json) if pending_json else []
-                    self.participants = json.loads(participants_json) if participants_json else {}
                 else:
                     raise Exception(f"Unexpected row format: {row}")
+                
+                # Verify HMAC
+                if stored_hmac and calculate_file_hmac(chain_json) != stored_hmac:
+                    logger.error("HMAC mismatch - ledger may be tampered!")
+                    raise Exception("Ledger integrity check failed")
+                
+                data = json.loads(chain_json)
+                self.chain = [Block.from_dict(block_data) for block_data in data]
+                self.pending_transactions = json.loads(pending_json) if pending_json else []
+                self.participants = json.loads(participants_json) if participants_json else {}
             else:
                 # No ledger found, create genesis block
                 genesis = self.create_genesis_block()
@@ -350,11 +364,15 @@ class Blockchain:
                 self.save_to_db()
                 logger.info("No ledger found. Genesis block created and saved.")
             
-            client.close()
-            
         except Exception as e:
             logger.error(f"Failed to load from Turso: {e}")
             self._load_fallback()
+        finally:
+            if client:
+                try:
+                    client.close()
+                except:
+                    pass
     
     def _load_fallback(self):
         """Fallback to local JSON if Turso fails"""
