@@ -1,0 +1,11 @@
+resident_id,name,id_type,id_number,pin
+2026-0001,Test Resident,resident_id,VTR001,224455
+2026-0002,Juan dela Cruz,student_id,IDC002,552266
+2026-0003,Maria Santos,philsys,IDC003,663377
+2026-0004,Pedro Garcia,drivers_license,IDC004,774433
+2026-0005,Juanita Reyes,passport,IDC005,885522
+2026-0006,Carlos Mendoza,resident_id,IDC006,996633
+2026-0007,Ana Lopez,student_id,IDC007,117722
+2026-0008,Luis Torres,philsys,IDC008,228877
+2026-0009,Rosa Flores,drivers_license,IDC009,339977
+2026-0010,Miguel Rivera,passport,IDC010,440055

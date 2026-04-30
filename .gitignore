@@ -1,0 +1,45 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Database files (local)
+*.db
+*.sqlite
+*.sqlite3
+
+# Ledger JSON (now using Turso)
+ledger.json
+ledger.json.tmp
+
+# Frontend
+frontend/dist/
+frontend/node_modules/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+temp/
+tmp/
