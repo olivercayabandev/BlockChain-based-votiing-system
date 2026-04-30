@@ -382,6 +382,7 @@ class Blockchain:
                 self.chain = [Block.from_dict(block_data) for block_data in data.get("chain", [])]
                 self.pending_transactions = data.get("pending_transactions", [])
                 self.participants = data.get("participants", {})
+                logger.info("Ledger loaded from fallback file")
         except FileNotFoundError:
             genesis = self.create_genesis_block()
             self.chain.append(genesis)
