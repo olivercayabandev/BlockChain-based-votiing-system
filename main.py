@@ -105,7 +105,10 @@ else:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-app = FastAPI(title="Blockchain Voting System", version="1.0.0")
+app = FastAPI(title="Blockchain Voting System", version="1.0.0",
+              docs_url="/docs",
+              redoc_url="/redoc",
+              openapi_url="/openapi.json")
 
 # CORS Configuration - Allow all origins (or set your Vercel URL)
 # For production, replace "*" with your actual Vercel URL
