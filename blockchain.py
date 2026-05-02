@@ -115,10 +115,11 @@ class Blockchain:
         return True
     
     def mine_pending_transactions(self, miner_address: str = "system") -> Optional[Block]:
-        if len(self.pending_transactions) < self.VOTES_PER_BLOCK:
+        if len(self.pending_transactions) == 0:
             return None
-        
-        votes_to_mine = self.pending_transactions[:self.VOTES_PER_BLOCK]
+
+        # Mine ALL pending transactions, not just VOTES_PER_BLOCK
+        votes_to_mine = self.pending_transactions[:]
         
         previous_hash = self.chain[-1].hash if self.chain else "0"
         new_block = Block(
@@ -132,7 +133,7 @@ class Blockchain:
         new_block = self.proof_of_work(new_block)
         self.chain.append(new_block)
         
-        self.pending_transactions = self.pending_transactions[self.VOTES_PER_BLOCK:]
+        self.pending_transactions = []
         
         self.create_backup()
         self.save_to_db()
@@ -278,9 +279,13 @@ class Blockchain:
             "pending_transactions": self.pending_transactions,
             "participants": self.participants
         }
-        with open("ledger_backup.json", "w") as f:
+        # Save to ledger.json (used by admin dashboard)
+        with open("ledger.json", "w") as f:
             json.dump(data, f, indent=2)
-        logger.info("Ledger saved to fallback file")
+        # Also save backup
+        import shutil
+        shutil.copy2("ledger.json", "ledger_backup.json")
+        logger.info("Ledger saved to ledger.json and backup")
     
     def load_from_db(self):
         """Load blockchain data from Turso database"""
@@ -377,16 +382,16 @@ class Blockchain:
     def _load_fallback(self):
         """Fallback to local JSON if Turso fails"""
         try:
-            with open("ledger_backup.json", "r") as f:
+            with open("ledger.json", "r") as f:
                 data = json.load(f)
                 self.chain = [Block.from_dict(block_data) for block_data in data.get("chain", [])]
                 self.pending_transactions = data.get("pending_transactions", [])
                 self.participants = data.get("participants", {})
-                logger.info("Ledger loaded from fallback file")
+            logger.info("Ledger loaded from ledger.json")
         except FileNotFoundError:
             genesis = self.create_genesis_block()
             self.chain.append(genesis)
-            logger.info("No fallback found. Genesis block created.")
+            logger.info("No ledger.json found. Genesis block created.")
     
     def get_chain_data(self) -> List[Dict[str, Any]]:
         return [block.to_dict() for block in self.chain]

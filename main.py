@@ -1351,7 +1351,13 @@ async def official_verify_voter(
 
 @app.get("/api/official/pending-voters")
 async def get_pending_voters(request: Request, db: SessionLocal = Depends(get_db)):
+    # Check both query parameter and Authorization header
     token = request.query_params.get("token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "")
+    
     if not token:
         return JSONResponse(
             status_code=401,
@@ -1408,7 +1414,13 @@ async def get_pending_voters(request: Request, db: SessionLocal = Depends(get_db
 
 @app.post("/api/official/start-review/{resident_id}")
 async def start_review(resident_id: str, request: Request, db: SessionLocal = Depends(get_db)):
+    # Check both query parameter and Authorization header
     token = request.query_params.get("token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "")
+    
     if not token:
         return JSONResponse(
             status_code=401,
@@ -1470,7 +1482,13 @@ async def start_review(resident_id: str, request: Request, db: SessionLocal = De
 
 @app.post("/api/official/end-review/{resident_id}")
 async def end_review(resident_id: str, request: Request, db: SessionLocal = Depends(get_db)):
+    # Check both query parameter and Authorization header
     token = request.query_params.get("token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "")
+    
     if not token:
         return JSONResponse(
             status_code=401,
@@ -1501,7 +1519,13 @@ async def end_review(resident_id: str, request: Request, db: SessionLocal = Depe
 
 @app.get("/api/admin/voters")
 async def get_admin_voters(request: Request, db: SessionLocal = Depends(get_db)):
+    # Check both query parameter and Authorization header
     token = request.query_params.get("token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "")
+    
     if not token:
         return JSONResponse(
             status_code=401,
@@ -1793,6 +1817,7 @@ def vote(request: VoteRequest, db: SessionLocal = Depends(get_db)):
     voter.gas_balance = max(0, voter.gas_balance - 0.05)
     logger.info(f"Deducted 0.05 gas from {request.resident_id}, new balance: {voter.gas_balance}")
     
+    # Save vote record to DB
     vote_record = VoteTransaction(
         resident_id=request.resident_id,
         candidate_id=request.candidate_id,
@@ -1803,21 +1828,24 @@ def vote(request: VoteRequest, db: SessionLocal = Depends(get_db)):
     db.add(vote_record)
     db.commit()
     
-    pending_count = blockchain.get_pending_count()
+    # Mine pending transactions (now mines ALL pending, not just when >= 5)
+    new_block = blockchain.mine_pending_transactions()
     mined = False
     
-    if pending_count >= 1:
-        new_block = blockchain.mine_pending_transactions()
-        if new_block:
-            mined = True
-            # Refresh vote_record from database (may be detached after mining)
-            vote_record = db.query(VoteTransaction).filter(
-                VoteTransaction.transaction_hash == tx_hash
-            ).first()
-            if vote_record:
-                vote_record.status = "confirmed"
-                vote_record.block_index = new_block.index
-                db.commit()
+    if new_block:
+        mined = True
+        # Update vote record status
+        vote_record = db.query(VoteTransaction).filter(
+            VoteTransaction.transaction_hash == tx_hash
+        ).first()
+        if vote_record:
+            vote_record.status = "confirmed"
+            vote_record.block_index = new_block.index
+            db.commit()
+        
+        # Save blockchain to disk
+        blockchain._save_fallback()
+        logger.info(f"Block {new_block.index} mined and saved")
     
     return {
         "message": "Vote recorded successfully",
