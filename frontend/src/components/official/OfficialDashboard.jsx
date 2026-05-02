@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export function OfficialDashboard({ onNavigate }) {
   const { isMobile } = useBreakpoint();

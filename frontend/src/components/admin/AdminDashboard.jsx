@@ -10,7 +10,7 @@ import { BlockchainVisualizer } from '../shared/BlockchainVisualizer';
 import { VerificationTool } from '../shared/VerificationTool';
 import { SystemReset } from './SystemReset';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export function AdminDashboard() {
   const { isMobile, isTablet } = useBreakpoint();
