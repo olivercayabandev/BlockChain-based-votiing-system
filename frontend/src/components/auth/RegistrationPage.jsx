@@ -362,10 +362,7 @@ export function RegistrationPage({ onSwitchPage }) {
           <button
             style={{ ...styles.button, ...styles.buttonSecondary, marginTop: '12px', cursor: 'pointer', zIndex: 9999 }}
             type="button"
-            onClick={() => {
-              alert('Back to Login clicked!');
-              onSwitchPage('login');
-            }}
+            onClick={() => onSwitchPage('login')}
           >
             Back to Login
           </button>
