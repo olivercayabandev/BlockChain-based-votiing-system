@@ -2456,6 +2456,113 @@ def reset_test_accounts():
         db.close()
 
 
+@app.post("/api/dev/seed-turso")
+def seed_turso():
+    """Seed Turso database with initial data - Development/Admin only"""
+    db = SessionLocal()
+    try:
+        from datetime import datetime
+        
+        # Seed Admins
+        admins_data = [
+            {"username": "admin", "password_hash": "$2b$12$pyMwLYMlMcloYOuM9Hv.N.L/iHCM8nYHwMnBdN9QDhj3v07N3h1xi", "is_active": True}
+        ]
+        for admin_data in admins_data:
+            existing = db.query(Admin).filter(Admin.username == admin_data["username"]).first()
+            if not existing:
+                admin = Admin(**admin_data)
+                db.add(admin)
+        db.commit()
+        print("Seeded admins")
+        
+        # Seed Election Officials
+        officials_data = [
+            {"official_id": "OFFICIAL-001", "name": "Commissioner Smith", "pin_hash": "$2b$12$pyMwLYMlMcloYOuM9Hv.N.L/iHCM8nYHwMnBdN9QDhj3v07N3h1xi", "role": "commissioner", "is_active": True, "is_pin_set": True},
+            {"official_id": "OFFICIAL-002", "name": "Officer Garcia", "pin_hash": "$2b$12$pyMwLYMlMcloYOuM9Hv.N.L/iHCM8nYHwMnBdN9QDhj3v07N3h1xi", "role": "officer", "is_active": True, "is_pin_set": True},
+            {"official_id": "OFFICIAL-003", "name": "Officer Santos", "pin_hash": "$2b$12$pyMwLYMlMcloYOuM9Hv.N.L/iHCM8nYHwMnBdN9QDhj3v07N3h1xi", "role": "officer", "is_active": True, "is_pin_set": True},
+            {"official_id": "OFFICIAL-004", "name": "Officer Cruz", "pin_hash": "$2b$12$pyMwLYMlMcloYOuM9Hv.N.L/iHCM8nYHwMnBdN9QDhj3v07N3h1xi", "role": "officer", "is_active": True, "is_pin_set": True},
+            {"official_id": "OFFICIAL-005", "name": "Officer Reyes", "pin_hash": "$2b$12$pyMwLYMlMcloYOuM9Hv.N.L/iHCM8nYHwMnBdN9QDhj3v07N3h1xi", "role": "officer", "is_active": True, "is_pin_set": True}
+        ]
+        for off_data in officials_data:
+            existing = db.query(ElectionOfficial).filter(ElectionOfficial.official_id == off_data["official_id"]).first()
+            if not existing:
+                official = ElectionOfficial(**off_data)
+                db.add(official)
+        db.commit()
+        print("Seeded election officials")
+        
+        # Seed Positions
+        positions_data = [
+            {"id": 1, "title": "SK Chairman", "max_votes": 1},
+            {"id": 2, "title": "SK Secretary", "max_votes": 1},
+            {"id": 3, "title": "SK Treasurer", "max_votes": 1},
+            {"id": 4, "title": "SK Councilor", "max_votes": 7},
+            {"id": 5, "title": "Brgy. Captain", "max_votes": 1},
+            {"id": 6, "title": "President", "max_votes": 1},
+            {"id": 7, "title": "Test Position XYZ", "max_votes": 1},
+            {"id": 8, "title": "vice president", "max_votes": 1}
+        ]
+        for pos_data in positions_data:
+            existing = db.query(Position).filter(Position.id == pos_data["id"]).first()
+            if not existing:
+                position = Position(**pos_data)
+                db.add(position)
+        db.commit()
+        print("Seeded positions")
+        
+        # Seed Candidates
+        candidates_data = [
+            {"id": 1, "candidate_id": "PILIPINAS", "name": "Maria Santos", "party": "Pilipinas Party", "description": "Community advocate", "position_id": 1},
+            {"id": 2, "candidate_id": "BAGONG", "name": "Jose Garcia", "party": "Bagong Partido", "description": "Youth leader", "position_id": 1},
+            {"id": 3, "candidate_id": "MAKABAYAN", "name": "Ana Reyes", "party": "Makabayan Bloc", "description": "Student activist", "position_id": 2},
+            {"id": 4, "candidate_id": "INDEPENDENT", "name": "Carlos Cruz", "party": "Independent", "description": "Tech enthusiast", "position_id": 2},
+            {"id": 5, "candidate_id": "LIBERAL", "name": "Lisa Tan", "party": "Liberal Alliance", "description": "Finance expert", "position_id": 3},
+            {"id": 6, "candidate_id": "NPC", "name": "Mark Rivera", "party": "Nationalist Party", "description": "Sports coordinator", "position_id": 3},
+            {"id": 7, "candidate_id": "LPG", "name": "Nina Morales", "party": "LPG Coalition", "description": "Environmental advocate", "position_id": 4},
+            {"id": 8, "candidate_id": "NUP", "name": "Oscar Lim", "party": "NUP Alliance", "description": "Senior citizen rep", "position_id": 4},
+            {"id": 9, "candidate_id": "PDP", "name": "Paula David", "party": "PDP Coalition", "description": "PWD advocate", "position_id": 4},
+            {"id": 10, "candidate_id": "AKBAYAN", "name": "Quentin Gomez", "party": "Akbayan Party", "description": "Education advocate", "position_id": 5},
+            {"id": 11, "candidate_id": "NACIONALISTA", "name": "Rosa Fernando", "party": "Nacionalista", "description": "Women's rights advocate", "position_id": 5},
+            {"id": 12, "candidate_id": "KBL", "name": "Samuel Ortiz", "party": "KBL Party", "description": "Anti-corruption advocate", "position_id": 5}
+        ]
+        for cand_data in candidates_data:
+            existing = db.query(Candidate).filter(Candidate.id == cand_data["id"]).first()
+            if not existing:
+                candidate = Candidate(**cand_data)
+                db.add(candidate)
+        db.commit()
+        print("Seeded candidates")
+        
+        # Seed Voters (first 10)
+        voters_data = [
+            {"resident_id": "2026-0001", "name": "Test Resident", "is_verified": True, "is_approved": True, "consent_given": True, "id_type": "PhilSys", "id_number": "1234-5678-9012"},
+            {"resident_id": "2026-0002", "name": "Juan Dela Cruz", "is_verified": True, "is_approved": True, "consent_given": True, "id_type": "DriverLicense", "id_number": "DL-123456"},
+            {"resident_id": "2026-0003", "name": "Maria Clara", "is_verified": True, "is_approved": True, "consent_given": True, "id_type": "Passport", "id_number": "P-987654"},
+            {"resident_id": "2026-0004", "name": "Jose Rizal", "is_verified": True, "is_approved": True, "consent_given": True, "id_type": "PhilSys", "id_number": "2345-6789-0123"},
+            {"resident_id": "2026-0005", "name": "Andres Bonifacio", "is_verified": True, "is_approved": True, "consent_given": True, "id_type": "SeniorCitizen", "id_number": "SC-111111"},
+            {"resident_id": "2026-0006", "name": "Apolinario Mabini", "is_verified": True, "is_approved": True, "consent_given": True, "id_type": "PWD", "id_number": "PWD-222222"},
+            {"resident_id": "2026-0007", "name": "Emilio Aguinaldo", "is_verified": False, "is_approved": False, "consent_given": False, "id_type": "", "id_number": ""},
+            {"resident_id": "2026-0008", "name": "Manuel Quezon", "is_verified": False, "is_approved": False, "consent_given": False, "id_type": "", "id_number": ""},
+            {"resident_id": "2026-0009", "name": "Sergio Osmena", "is_verified": False, "is_approved": False, "consent_given": False, "id_type": "", "id_number": ""},
+            {"resident_id": "2026-0010", "name": "Manuel Roxas", "is_verified": False, "is_approved": False, "consent_given": False, "id_type": "", "id_number": ""}
+        ]
+        for voter_data in voters_data:
+            existing = db.query(Voter).filter(Voter.resident_id == voter_data["resident_id"]).first()
+            if not existing:
+                voter = Voter(**voter_data)
+                db.add(voter)
+        db.commit()
+        print("Seeded voters")
+        
+        return {"message": "Turso database seeded successfully", "status": "success"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error seeding Turso: {e}")
+        return {"message": f"Error: {str(e)}", "status": "error"}
+    finally:
+        db.close()
+
+
 # Catch-all route for SPA (must be LAST route)
 from fastapi.responses import FileResponse
 
