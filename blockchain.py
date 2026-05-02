@@ -336,14 +336,14 @@ class Blockchain:
                     row = rows[0]
                     
                     try:
-                        # FIX: Handle both dict and tuple/list response formats
-                        if isinstance(row, dict):
-                            # Dict-based response (keys are column names)
-                            chain_json = row.get('chain_data')
-                            pending_json = row.get('pending_transactions')
-                            participants_json = row.get('participants')
-                            stored_hmac = row.get('hmac')
-                        else:
+                        # FIX: Handle both dict and Row object response formats
+                        if isinstance(row, dict) or hasattr(row, 'get'):
+                            # Dict-like response (keys are column names)
+                            chain_json = row.get('chain_data') if hasattr(row, 'get') else row['chain_data']
+                            pending_json = row.get('pending_transactions') if hasattr(row, 'get') else row['pending_transactions']
+                            participants_json = row.get('participants') if hasattr(row, 'get') else row['participants']
+                            stored_hmac = row.get('hmac') if hasattr(row, 'get') else row['hmac']
+                        elif isinstance(row, (list, tuple)):
                             # Tuple/list-based response (positional indices)
                             if len(row) >= 4:
                                 chain_json = row[0]
@@ -352,6 +352,16 @@ class Blockchain:
                                 stored_hmac = row[3]
                             else:
                                 raise ValueError(f"Row has insufficient columns: {len(row)}")
+                        else:
+                            # Try to convert to dict if it's a libsql Row object
+                            try:
+                                row_dict = dict(row)
+                                chain_json = row_dict.get('chain_data')
+                                pending_json = row_dict.get('pending_transactions')
+                                participants_json = row_dict.get('participants')
+                                stored_hmac = row_dict.get('hmac')
+                            except:
+                                raise TypeError(f"Unexpected row type: {type(row)}, value: {row}")
                         
                         # Verify HMAC
                         if stored_hmac and chain_json:
