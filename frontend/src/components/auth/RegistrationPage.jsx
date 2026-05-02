@@ -49,7 +49,7 @@ export function RegistrationPage({ onSwitchPage }) {
 
   const handleSubmit = useCallback(async () => {
     setError('');
-
+    
     if (!formData.resident_id.trim()) {
       setError('Resident ID is required');
       return;
@@ -82,9 +82,9 @@ export function RegistrationPage({ onSwitchPage }) {
       setError('You must agree to the Data Privacy Act consent');
       return;
     }
-
+    
     setLoading(true);
-
+    
     try {
       const res = await fetch(`/api/register`, {
         method: 'POST',
@@ -106,9 +106,6 @@ export function RegistrationPage({ onSwitchPage }) {
       
       setSuccess(data.message);
       setPinDisplay(pin);
-      setTimeout(() => {
-        onSwitchPage('login');
-      }, 5000);
     } catch (err) {
       if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
         setError('Cannot connect to server. Please check your connection.');
@@ -119,6 +116,15 @@ export function RegistrationPage({ onSwitchPage }) {
       setLoading(false);
     }
   }, [formData, pin, confirmPin, onSwitchPage]);
+
+  useEffect(() => {
+    if (success && pinDisplay) {
+      const timer = setTimeout(() => {
+        onSwitchPage('login');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, pinDisplay, onSwitchPage]);
 
   const styles = {
     container: { maxWidth: '100%', margin: '0 auto', padding: '16px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif' },
@@ -167,7 +173,7 @@ export function RegistrationPage({ onSwitchPage }) {
     barangay_id: 'Your ID number',
   };
 
-  if (success && pinDisplay) {
+    if (success && pinDisplay) {
     return (
       <div style={styles.container}>
         <div style={styles.loginBox}>
@@ -196,7 +202,14 @@ export function RegistrationPage({ onSwitchPage }) {
               </span>
             </div>
             
-            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '13px' }}>
+            <button
+              style={{ ...styles.button, ...styles.buttonPrimary, marginTop: '16px' }}
+              onClick={() => onSwitchPage('login')}
+            >
+              Go to Login
+            </button>
+            
+            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '13px', marginTop: '12px' }}>
               Redirecting to login in 5 seconds...
             </p>
           </div>
