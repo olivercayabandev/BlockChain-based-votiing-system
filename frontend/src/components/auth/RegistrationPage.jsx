@@ -120,6 +120,7 @@ export function RegistrationPage({ onSwitchPage }) {
   useEffect(() => {
     let interval;
     if (success && pinDisplay) {
+      setCountdown(5);
       interval = setInterval(() => {
         setCountdown(prev => {
           if (prev <= 1) {
@@ -181,7 +182,7 @@ export function RegistrationPage({ onSwitchPage }) {
     barangay_id: 'Your ID number',
   };
 
-  if (success && pinDisplay) {
+    if (success && pinDisplay) {
     return (
       <div style={styles.container}>
         <div style={styles.loginBox}>
@@ -209,13 +210,6 @@ export function RegistrationPage({ onSwitchPage }) {
                 You will be able to vote once approved.
               </span>
             </div>
-            
-            <button
-              style={{ ...styles.button, ...styles.buttonPrimary, marginTop: '16px' }}
-              onClick={() => onSwitchPage('login')}
-            >
-              Go to Login
-            </button>
             
             <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '13px', marginTop: '12px' }}>
               Redirecting to login in {countdown} seconds...
@@ -367,7 +361,11 @@ export function RegistrationPage({ onSwitchPage }) {
           
           <button
             style={{ ...styles.button, ...styles.buttonSecondary, marginTop: '12px' }}
-            onClick={() => onSwitchPage('login')}
+            type="button"
+            onClick={() => {
+              console.log('Back to Login clicked');
+              onSwitchPage('login');
+            }}
           >
             Back to Login
           </button>
