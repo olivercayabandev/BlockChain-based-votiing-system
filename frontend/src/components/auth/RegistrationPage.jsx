@@ -142,7 +142,7 @@ export function RegistrationPage({ onSwitchPage }) {
     input: { width: '100%', paddingTop: '10px', paddingBottom: '10px', paddingLeft: '12px', paddingRight: '12px', borderRadius: '6px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#d1d5db', fontSize: '14px', marginBottom: '12px', outline: 'none', boxSizing: 'border-box' },
     button: { paddingTop: '10px', paddingBottom: '10px', paddingLeft: '20px', paddingRight: '20px', borderRadius: '6px', border: 'none', fontSize: '14px', fontWeight: '500', cursor: 'pointer', width: '100%' },
     buttonPrimary: { backgroundColor: '#0d9488', color: '#fff' },
-    buttonSecondary: { backgroundColor: '#f3f4f6', color: '#374151' },
+    buttonSecondary: { backgroundColor: '#f3f4f6', color: '#374151', transition: 'all 0.2s', ':hover': { backgroundColor: '#e5e7eb' } },
     alert: { paddingTop: '12px', paddingBottom: '12px', paddingLeft: '16px', paddingRight: '16px', borderRadius: '6px', marginBottom: '12px', fontSize: '14px' },
     alertRed: { backgroundColor: '#fef2f2', color: '#991b1b' },
     alertGreen: { backgroundColor: '#f0fdf4', color: '#166534' },
@@ -230,8 +230,10 @@ export function RegistrationPage({ onSwitchPage }) {
         <div style={styles.card}>
           <div style={styles.row}>
             <div style={styles.col}>
-              <label style={styles.label}>Resident ID *</label>
+              <label style={styles.label} htmlFor="resident_id">Resident ID *</label>
               <input
+                id="resident_id"
+                name="resident_id"
                 style={styles.input}
                 placeholder="e.g., 2026-0001"
                 value={formData.resident_id}
@@ -240,8 +242,10 @@ export function RegistrationPage({ onSwitchPage }) {
               />
             </div>
             <div style={styles.col}>
-              <label style={styles.label}>Full Name *</label>
+              <label style={styles.label} htmlFor="full_name">Full Name *</label>
               <input
+                id="full_name"
+                name="full_name"
                 style={styles.input}
                 placeholder="Enter your full name"
                 value={formData.name}
@@ -251,8 +255,10 @@ export function RegistrationPage({ onSwitchPage }) {
             </div>
           </div>
           
-          <label style={styles.label}>ID Type *</label>
+          <label style={styles.label} htmlFor="id_type">ID Type *</label>
           <select
+            id="id_type"
+            name="id_type"
             style={styles.select}
             value={formData.id_type}
             onChange={(e) => updateField('id_type', e.target.value)}
@@ -264,8 +270,10 @@ export function RegistrationPage({ onSwitchPage }) {
             ))}
           </select>
           
-          <label style={styles.label}>ID Number *</label>
+          <label style={styles.label} htmlFor="id_number">ID Number *</label>
           <input
+            id="id_number"
+            name="id_number"
             style={styles.input}
             placeholder={formData.id_type ? ID_HINTS[formData.id_type] : 'Select ID type first'}
             value={formData.id_number}
@@ -275,8 +283,10 @@ export function RegistrationPage({ onSwitchPage }) {
           />
           
           <div style={{ ...styles.pinBox, backgroundColor: '#f0fdfa', borderColor: '#0d9488' }}>
-            <label style={styles.label}>Set Your 6-digit PIN *</label>
+            <label style={styles.label} htmlFor="pin">Set Your 6-digit PIN *</label>
             <input
+              id="pin"
+              name="pin"
               type={showPin ? 'text' : 'password'}
               style={styles.input}
               placeholder="Enter 6-digit PIN"
@@ -286,6 +296,8 @@ export function RegistrationPage({ onSwitchPage }) {
               aria-label="PIN"
             />
             <input
+              id="confirm_pin"
+              name="confirm_pin"
               type={showPin ? 'text' : 'password'}
               style={styles.input}
               placeholder="Confirm PIN"
@@ -294,8 +306,10 @@ export function RegistrationPage({ onSwitchPage }) {
               maxLength={6}
               aria-label="Confirm PIN"
             />
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }} htmlFor="show_pin">
               <input
+                id="show_pin"
+                name="show_pin"
                 type="checkbox"
                 checked={showPin}
                 onChange={(e) => setShowPin(e.target.checked)}
@@ -338,6 +352,8 @@ export function RegistrationPage({ onSwitchPage }) {
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', marginTop: '12px', marginBottom: '12px' }}>
             <input
               type="checkbox"
+              id="consent"
+              name="consent"
               checked={formData.consent_given}
               onChange={(e) => updateField('consent_given', e.target.checked)}
               style={{ marginTop: '4px' }}
@@ -362,7 +378,9 @@ export function RegistrationPage({ onSwitchPage }) {
           <button
             style={{ ...styles.button, ...styles.buttonSecondary, marginTop: '12px', cursor: 'pointer', zIndex: 9999 }}
             type="button"
-            onClick={() => onSwitchPage('login')}
+            onClick={() => {
+              onSwitchPage('login');
+            }}
           >
             Back to Login
           </button>
