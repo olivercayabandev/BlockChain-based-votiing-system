@@ -115,11 +115,10 @@ class Blockchain:
         return True
     
     def mine_pending_transactions(self, miner_address: str = "system") -> Optional[Block]:
-        if len(self.pending_transactions) == 0:
+        if len(self.pending_transactions) < self.VOTES_PER_BLOCK:
             return None
-
-        # Mine ALL pending transactions, not just VOTES_PER_BLOCK
-        votes_to_mine = self.pending_transactions[:]
+        
+        votes_to_mine = self.pending_transactions[:self.VOTES_PER_BLOCK]
         
         previous_hash = self.chain[-1].hash if self.chain else "0"
         new_block = Block(
@@ -133,7 +132,7 @@ class Blockchain:
         new_block = self.proof_of_work(new_block)
         self.chain.append(new_block)
         
-        self.pending_transactions = []
+        self.pending_transactions = self.pending_transactions[self.VOTES_PER_BLOCK:]
         
         self.create_backup()
         self.save_to_db()
@@ -204,7 +203,6 @@ class Blockchain:
     
     def save_to_db(self):
         """Save blockchain data to Turso database"""
-        client = None
         try:
             from libsql_client import create_client_sync
             
@@ -225,52 +223,50 @@ class Blockchain:
                 auth_token=TURSO_AUTH_TOKEN if TURSO_AUTH_TOKEN else None
             )
             
-            # Prepare data
-            chain_data = [block.to_dict() for block in self.chain]
-            data = {
-                "chain": chain_data,
-                "pending_transactions": self.pending_transactions,
-                "participants": self.participants
-            }
-            
-            json_str = json.dumps(data, indent=2)
-            hmac_val = calculate_file_hmac(json_str)
-            
-            # Create table if not exists
-            client.execute("""
-                CREATE TABLE IF NOT EXISTS blockchain_ledger (
-                    id INTEGER PRIMARY KEY,
-                    chain_data TEXT,
-                    pending_transactions TEXT,
-                    participants TEXT,
-                    hmac TEXT,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Upsert into blockchain_ledger table (fixed: added commas between column names)
-            client.execute("""
-                INSERT OR REPLACE INTO blockchain_ledger 
-                (id, chain_data, pending_transactions, participants, hmac, updated_at) 
-                VALUES (1, ?, ?, ?, ?, datetime('now'))
-            """, [
-                json_str,
-                json.dumps(self.pending_transactions),
-                json.dumps(self.participants),
-                hmac_val
-            ])
-            
-            logger.info("Ledger saved to Turso DB (%s blocks)", len(self.chain))
+            try:
+                # Prepare data
+                chain_data = [block.to_dict() for block in self.chain]
+                data = {
+                    "chain": chain_data,
+                    "pending_transactions": self.pending_transactions,
+                    "participants": self.participants
+                }
+                
+                json_str = json.dumps(data, indent=2)
+                hmac_val = calculate_file_hmac(json_str)
+                
+                # Create table if not exists
+                client.execute("""
+                    CREATE TABLE IF NOT EXISTS blockchain_ledger (
+                        id INTEGER PRIMARY KEY,
+                        chain_data TEXT,
+                        pending_transactions TEXT,
+                        participants TEXT,
+                        hmac TEXT,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Upsert into blockchain_ledger table
+                client.execute("""
+                    INSERT OR REPLACE INTO blockchain_ledger 
+                    (id, chain_data, pending_transactions, participants, hmac, updated_at) 
+                    VALUES (1, ?, ?, ?, ?, datetime('now'))
+                """, [
+                    json_str,
+                    json.dumps(self.pending_transactions),
+                    json.dumps(self.participants),
+                    hmac_val
+                ])
+                
+                logger.info("Ledger saved to Turso DB (%s blocks)", len(self.chain))
+                
+            finally:
+                client.close()
             
         except Exception as e:
             logger.error(f"Failed to save to Turso: {e}")
             self._save_fallback()
-        finally:
-            if client:
-                try:
-                    client.close()
-                except:
-                    pass
     
     def _save_fallback(self):
         """Fallback to local JSON if Turso fails"""
@@ -279,17 +275,12 @@ class Blockchain:
             "pending_transactions": self.pending_transactions,
             "participants": self.participants
         }
-        # Save to ledger.json (used by admin dashboard)
-        with open("ledger.json", "w") as f:
+        with open("ledger_backup.json", "w") as f:
             json.dump(data, f, indent=2)
-        # Also save backup
-        import shutil
-        shutil.copy2("ledger.json", "ledger_backup.json")
-        logger.info("Ledger saved to ledger.json and backup")
+        logger.info("Ledger saved to fallback file")
     
     def load_from_db(self):
         """Load blockchain data from Turso database"""
-        client = None
         try:
             from libsql_client import create_client_sync
             
@@ -311,87 +302,103 @@ class Blockchain:
                 auth_token=TURSO_AUTH_TOKEN if TURSO_AUTH_TOKEN else None
             )
             
-            # Create table if not exists
-            client.execute("""
-                CREATE TABLE IF NOT EXISTS blockchain_ledger (
-                    id INTEGER PRIMARY KEY,
-                    chain_data TEXT,
-                    pending_transactions TEXT,
-                    participants TEXT,
-                    hmac TEXT,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Load ledger
-            result = client.execute("SELECT chain_data, pending_transactions, participants, hmac FROM blockchain_ledger WHERE id = 1")
-            
-            # Handle different response formats from libsql-client
-            rows = None
-            if hasattr(result, 'rows'):
-                rows = result.rows
-            elif isinstance(result, list):
-                rows = result
-            elif hasattr(result, '__iter__'):
-                rows = list(result)
-            
-            if rows and len(rows) > 0:
-                row = rows[0]
-                # row should be a list/tuple with 4 elements
-                if isinstance(row, dict):
-                    # If row is a dict, access by column name
-                    chain_json = row.get('chain_data')
-                    pending_json = row.get('pending_transactions')
-                    participants_json = row.get('participants')
-                    stored_hmac = row.get('hmac')
-                elif len(row) >= 4:
-                    # If row is a list/tuple, access by index
-                    chain_json = row[0]
-                    pending_json = row[1]
-                    participants_json = row[2]
-                    stored_hmac = row[3]
+            try:
+                # Create table if not exists
+                client.execute("""
+                    CREATE TABLE IF NOT EXISTS blockchain_ledger (
+                        id INTEGER PRIMARY KEY,
+                        chain_data TEXT,
+                        pending_transactions TEXT,
+                        participants TEXT,
+                        hmac TEXT,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Load ledger
+                result = client.execute("SELECT chain_data, pending_transactions, participants, hmac FROM blockchain_ledger WHERE id = 1")
+                
+                # FIX: Handle different response formats from libsql-client
+                rows = None
+                if hasattr(result, 'rows'):
+                    rows = result.rows
+                elif isinstance(result, list):
+                    rows = result
+                elif isinstance(result, dict) and 'rows' in result:
+                    rows = result.get('rows', [])
+                elif hasattr(result, '__iter__'):
+                    try:
+                        rows = list(result)
+                    except:
+                        rows = None
+                
+                if rows and len(rows) > 0:
+                    row = rows[0]
+                    
+                    try:
+                        # FIX: Handle both dict and tuple/list response formats
+                        if isinstance(row, dict):
+                            # Dict-based response (keys are column names)
+                            chain_json = row.get('chain_data')
+                            pending_json = row.get('pending_transactions')
+                            participants_json = row.get('participants')
+                            stored_hmac = row.get('hmac')
+                        else:
+                            # Tuple/list-based response (positional indices)
+                            if len(row) >= 4:
+                                chain_json = row[0]
+                                pending_json = row[1]
+                                participants_json = row[2]
+                                stored_hmac = row[3]
+                            else:
+                                raise ValueError(f"Row has insufficient columns: {len(row)}")
+                        
+                        # Verify HMAC
+                        if stored_hmac and chain_json:
+                            calculated_hmac = calculate_file_hmac(chain_json)
+                            if calculated_hmac != stored_hmac:
+                                logger.error("HMAC mismatch - ledger may be tampered!")
+                                raise Exception("Ledger integrity check failed")
+                        
+                        data = json.loads(chain_json)
+                        self.chain = [Block.from_dict(block_data) for block_data in data]
+                        self.pending_transactions = json.loads(pending_json) if pending_json else []
+                        self.participants = json.loads(participants_json) if participants_json else {}
+                        logger.info(f"Ledger loaded: {len(self.chain)} blocks, {len(self.participants)} participants")
+                        
+                    except (ValueError, TypeError, KeyError, json.JSONDecodeError) as e:
+                        logger.error(f"Error parsing row data: {e}. Row type: {type(row)}")
+                        raise Exception(f"Failed to parse ledger data: {e}")
                 else:
-                    raise Exception(f"Unexpected row format: {row}")
+                    # No ledger found, create genesis block
+                    logger.info("No ledger found in database. Creating genesis block...")
+                    genesis = self.create_genesis_block()
+                    self.chain.append(genesis)
+                    self.save_to_db()
+                    logger.info("Genesis block created and saved.")
                 
-                # Verify HMAC
-                if stored_hmac and calculate_file_hmac(chain_json) != stored_hmac:
-                    logger.error("HMAC mismatch - ledger may be tampered!")
-                    raise Exception("Ledger integrity check failed")
-                
-                data = json.loads(chain_json)
-                self.chain = [Block.from_dict(block_data) for block_data in data]
-                self.pending_transactions = json.loads(pending_json) if pending_json else []
-                self.participants = json.loads(participants_json) if participants_json else {}
-            else:
-                # No ledger found, create genesis block
-                genesis = self.create_genesis_block()
-                self.chain.append(genesis)
-                self.save_to_db()
-                logger.info("No ledger found. Genesis block created and saved.")
+            finally:
+                client.close()
             
         except Exception as e:
             logger.error(f"Failed to load from Turso: {e}")
+            logger.info("Falling back to local backup...")
             self._load_fallback()
-        finally:
-            if client:
-                try:
-                    client.close()
-                except:
-                    pass
     
     def _load_fallback(self):
         """Fallback to local JSON if Turso fails"""
         try:
-            with open("ledger.json", "r") as f:
+            with open("ledger_backup.json", "r") as f:
                 data = json.load(f)
                 self.chain = [Block.from_dict(block_data) for block_data in data.get("chain", [])]
                 self.pending_transactions = data.get("pending_transactions", [])
                 self.participants = data.get("participants", {})
-            logger.info("Ledger loaded from ledger.json")
+                logger.info(f"Ledger loaded from backup: {len(self.chain)} blocks")
         except FileNotFoundError:
+            logger.info("No backup found. Creating genesis block...")
             genesis = self.create_genesis_block()
             self.chain.append(genesis)
-            logger.info("No ledger.json found. Genesis block created.")
+            logger.info("Genesis block created.")
     
     def get_chain_data(self) -> List[Dict[str, Any]]:
         return [block.to_dict() for block in self.chain]
