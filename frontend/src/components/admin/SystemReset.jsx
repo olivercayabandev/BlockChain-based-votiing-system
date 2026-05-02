@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = '';
 
 export function SystemReset({ token }) {
   const [confirmText, setConfirmText] = useState('');

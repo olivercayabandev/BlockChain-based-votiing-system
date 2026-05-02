@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { API_URL } from '../utils/validation';
 
 export function useAdmin(token) {
   const [voters, setVoters] = useState([]);
@@ -20,7 +19,7 @@ export function useAdmin(token) {
     setError(null);
 
     try {
-      const votersRes = await fetch(`${API_URL}/api/admin/voters?token=${token}`);
+      const votersRes = await fetch(`/api/admin/voters?token=${token}`);
 
       if (!votersRes.ok) {
         throw new Error(`Admin API failed: ${votersRes.status}`);
@@ -28,10 +27,10 @@ export function useAdmin(token) {
 
       const votersData = await votersRes.json();
       const [statsData, chainData, posData, candData] = await Promise.all([
-        fetch(`${API_URL}/api/stats`).then(r => r.json()),
-        fetch(`${API_URL}/api/blockchain`).then(r => r.json()),
-        fetch(`${API_URL}/api/positions`).then(r => r.json()),
-        fetch(`${API_URL}/api/candidates`).then(r => r.json())
+        fetch(`/api/stats`).then(r => r.json()),
+        fetch(`/api/blockchain`).then(r => r.json()),
+        fetch(`/api/positions`).then(r => r.json()),
+        fetch(`/api/candidates`).then(r => r.json())
       ]);
 
       setVoters(votersData || []);
@@ -51,7 +50,7 @@ export function useAdmin(token) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/approve`, {
+      const res = await fetch(`/api/admin/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resident_id: residentId, approved, token })
@@ -75,7 +74,7 @@ export function useAdmin(token) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/reset-election`, {
+      const res = await fetch(`/api/admin/reset-election`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
@@ -99,7 +98,7 @@ export function useAdmin(token) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/voters/${residentId}/delete?token=${token}`, {
+      const res = await fetch(`/api/admin/voters/${residentId}/delete?token=${token}`, {
         method: 'POST',
       });
 

@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = '';
 
 const theme = {
   colors: {

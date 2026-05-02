@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = '';
 
 export function RegistrationPage({ onSwitchPage }) {
   const [formData, setFormData] = useState({

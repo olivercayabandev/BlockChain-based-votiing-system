@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { API_URL } from '../utils/validation';
 
 export function useToast() {
   const [toasts, setToasts] = useState([]);
