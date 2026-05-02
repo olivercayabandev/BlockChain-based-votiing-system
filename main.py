@@ -1307,6 +1307,7 @@ async def official_verify_voter(
         voter.is_active = True
         voter.verified_by = official_id
         voter.approved_at = datetime.utcnow().isoformat()
+        voter.gas_balance = 1.0  # Give voter initial gas for voting
         
         approval = VerificationApproval(
             voter_resident_id=resident_id,
