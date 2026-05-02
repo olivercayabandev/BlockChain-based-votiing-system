@@ -336,32 +336,35 @@ class Blockchain:
                     row = rows[0]
                     
                     try:
-                        # FIX: Handle both dict and Row object response formats
-                        if isinstance(row, dict) or hasattr(row, 'get'):
-                            # Dict-like response (keys are column names)
-                            chain_json = row.get('chain_data') if hasattr(row, 'get') else row['chain_data']
-                            pending_json = row.get('pending_transactions') if hasattr(row, 'get') else row['pending_transactions']
-                            participants_json = row.get('participants') if hasattr(row, 'get') else row['participants']
-                            stored_hmac = row.get('hmac') if hasattr(row, 'get') else row['hmac']
-                        elif isinstance(row, (list, tuple)):
-                            # Tuple/list-based response (positional indices)
-                            if len(row) >= 4:
+                        # FIX: Handle dict, Row object, and tuple response formats
+                        chain_json = None
+                        pending_json = None
+                        participants_json = None
+                        stored_hmac = None
+                        
+                        # Try dict-like access first (works for dict and libsql Row)
+                        try:
+                            # libsql Row objects support both [] and .get()
+                            if hasattr(row, 'get') and callable(row.get):
+                                chain_json = row.get('chain_data')
+                                pending_json = row.get('pending_transactions')
+                                participants_json = row.get('participants')
+                                stored_hmac = row.get('hmac')
+                            elif hasattr(row, '__getitem__'):
+                                # Assume it's a dict or supports indexing
+                                chain_json = row['chain_data'] if isinstance(row, dict) else row[0]
+                                pending_json = row['pending_transactions'] if isinstance(row, dict) else row[1]
+                                participants_json = row['participants'] if isinstance(row, dict) else row[2]
+                                stored_hmac = row['hmac'] if isinstance(row, dict) else row[3]
+                        except (KeyError, IndexError, TypeError) as e:
+                            # Fallback: try positional access
+                            if isinstance(row, (list, tuple)) and len(row) >= 4:
                                 chain_json = row[0]
                                 pending_json = row[1]
                                 participants_json = row[2]
                                 stored_hmac = row[3]
                             else:
-                                raise ValueError(f"Row has insufficient columns: {len(row)}")
-                        else:
-                            # Try to convert to dict if it's a libsql Row object
-                            try:
-                                row_dict = dict(row)
-                                chain_json = row_dict.get('chain_data')
-                                pending_json = row_dict.get('pending_transactions')
-                                participants_json = row_dict.get('participants')
-                                stored_hmac = row_dict.get('hmac')
-                            except:
-                                raise TypeError(f"Unexpected row type: {type(row)}, value: {row}")
+                                raise ValueError(f"Cannot parse row: {e}, row: {row}")
                         
                         # Verify HMAC
                         if stored_hmac and chain_json:
