@@ -106,7 +106,7 @@ export function useElectionSetup(token, onUpdate) {
         position_id: parseInt(newCandidate.position_id, 10)
       };
 
-      const res = await fetch(`${API_URL}/api/candidates`, {
+      const res = await fetch(`/api/candidates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

@@ -23,7 +23,7 @@ export function SystemReset({ token }) {
     setResult(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/admin/hard-reset?token=${encodeURIComponent(token)}`, {
+      const response = await fetch(`/api/admin/hard-reset?token=${encodeURIComponent(token)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

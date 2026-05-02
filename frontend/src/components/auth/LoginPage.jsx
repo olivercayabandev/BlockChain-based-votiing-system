@@ -140,7 +140,7 @@ export function LoginPage({ onSwitchPage }) {
     setError('');
 
     try {
-      const res = await fetch(`${API_URL}/api/voter/setup-pin`, {
+      const res = await fetch(`/api/voter/setup-pin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
