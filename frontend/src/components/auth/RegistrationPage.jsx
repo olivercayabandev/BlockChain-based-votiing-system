@@ -1,8 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-const API_URL = '';
-
 export function RegistrationPage({ onSwitchPage }) {
   const [formData, setFormData] = useState({
     resident_id: '',
@@ -19,6 +17,7 @@ export function RegistrationPage({ onSwitchPage }) {
   const [success, setSuccess] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [pinDisplay, setPinDisplay] = useState('');
+  const [countdown, setCountdown] = useState(5);
   const [idPhotoFront, setIdPhotoFront] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -32,12 +31,12 @@ export function RegistrationPage({ onSwitchPage }) {
   const handlePhotoUpload = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+    
     if (file.size > 5 * 1024 * 1024) {
       setError('Image too large. Max 5MB.');
       return;
     }
-
+    
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64 = reader.result.split(',')[1];
@@ -106,6 +105,7 @@ export function RegistrationPage({ onSwitchPage }) {
       
       setSuccess(data.message);
       setPinDisplay(pin);
+      setCountdown(5);
     } catch (err) {
       if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
         setError('Cannot connect to server. Please check your connection.');
@@ -118,12 +118,20 @@ export function RegistrationPage({ onSwitchPage }) {
   }, [formData, pin, confirmPin, onSwitchPage]);
 
   useEffect(() => {
+    let interval;
     if (success && pinDisplay) {
-      const timer = setTimeout(() => {
-        onSwitchPage('login');
-      }, 5000);
-      return () => clearTimeout(timer);
+      interval = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            onSwitchPage('login');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
+    return () => clearInterval(interval);
   }, [success, pinDisplay, onSwitchPage]);
 
   const styles = {
@@ -173,7 +181,7 @@ export function RegistrationPage({ onSwitchPage }) {
     barangay_id: 'Your ID number',
   };
 
-    if (success && pinDisplay) {
+  if (success && pinDisplay) {
     return (
       <div style={styles.container}>
         <div style={styles.loginBox}>
@@ -210,7 +218,7 @@ export function RegistrationPage({ onSwitchPage }) {
             </button>
             
             <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '13px', marginTop: '12px' }}>
-              Redirecting to login in 5 seconds...
+              Redirecting to login in {countdown} seconds...
             </p>
           </div>
         </div>
@@ -248,7 +256,7 @@ export function RegistrationPage({ onSwitchPage }) {
               />
             </div>
           </div>
-
+          
           <label style={styles.label}>ID Type *</label>
           <select
             style={styles.select}
@@ -261,7 +269,7 @@ export function RegistrationPage({ onSwitchPage }) {
               <option key={type.value} value={type.value}>{type.label}</option>
             ))}
           </select>
-
+          
           <label style={styles.label}>ID Number *</label>
           <input
             style={styles.input}
@@ -271,7 +279,7 @@ export function RegistrationPage({ onSwitchPage }) {
             aria-label="ID Number"
             disabled={!formData.id_type}
           />
-
+          
           <div style={{ ...styles.pinBox, backgroundColor: '#f0fdfa', borderColor: '#0d9488' }}>
             <label style={styles.label}>Set Your 6-digit PIN *</label>
             <input
@@ -304,7 +312,7 @@ export function RegistrationPage({ onSwitchPage }) {
               <strong>Important:</strong> You will need this PIN to vote. Write it down and keep it safe!
             </p>
           </div>
-
+          
           <label style={styles.label}>ID Photo (Front) - Optional</label>
           <input
             type="file"
@@ -332,7 +340,7 @@ export function RegistrationPage({ onSwitchPage }) {
               </button>
             </div>
           )}
-
+          
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', marginTop: '12px', marginBottom: '12px' }}>
             <input
               type="checkbox"
@@ -345,9 +353,9 @@ export function RegistrationPage({ onSwitchPage }) {
               I agree to the Data Privacy Act (R.A. 10173) consent and confirm that all information provided is accurate.
             </span>
           </label>
-
+          
           {error && <div style={{ ...styles.alert, ...styles.alertRed }} role="alert">{error}</div>}
-
+          
           <button
             style={{ ...styles.button, ...styles.buttonPrimary }}
             onClick={handleSubmit}
@@ -356,7 +364,7 @@ export function RegistrationPage({ onSwitchPage }) {
           >
             {loading ? 'Registering...' : 'Register & Set PIN'}
           </button>
-
+          
           <button
             style={{ ...styles.button, ...styles.buttonSecondary, marginTop: '12px' }}
             onClick={() => onSwitchPage('login')}
