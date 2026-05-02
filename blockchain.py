@@ -203,7 +203,6 @@ class Blockchain:
     
     def save_to_db(self):
         """Save blockchain data to Turso database"""
-        client = None
         try:
             from libsql_client import create_client_sync
             
@@ -261,9 +260,9 @@ class Blockchain:
                 ])
                 
                 logger.info("Ledger saved to Turso DB (%s blocks)", len(self.chain))
+                
             finally:
-                if client:
-                    client.close()
+                client.close()
             
         except Exception as e:
             logger.error(f"Failed to save to Turso: {e}")
@@ -282,7 +281,6 @@ class Blockchain:
     
     def load_from_db(self):
         """Load blockchain data from Turso database"""
-        client = None
         try:
             from libsql_client import create_client_sync
             
@@ -327,7 +325,6 @@ class Blockchain:
                 elif isinstance(result, list):
                     rows = result
                 elif isinstance(result, dict) and 'rows' in result:
-                    # Response is a dict with 'rows' key
                     rows = result.get('rows', [])
                 elif hasattr(result, '__iter__'):
                     try:
@@ -338,10 +335,10 @@ class Blockchain:
                 if rows and len(rows) > 0:
                     row = rows[0]
                     
-                    # FIX: Handle both dict and list/tuple response formats
                     try:
+                        # FIX: Handle both dict and tuple/list response formats
                         if isinstance(row, dict):
-                            # Dict-based response (column names as keys)
+                            # Dict-based response (keys are column names)
                             chain_json = row.get('chain_data')
                             pending_json = row.get('pending_transactions')
                             participants_json = row.get('participants')
@@ -358,7 +355,8 @@ class Blockchain:
                         
                         # Verify HMAC
                         if stored_hmac and chain_json:
-                            if calculate_file_hmac(chain_json) != stored_hmac:
+                            calculated_hmac = calculate_file_hmac(chain_json)
+                            if calculated_hmac != stored_hmac:
                                 logger.error("HMAC mismatch - ledger may be tampered!")
                                 raise Exception("Ledger integrity check failed")
                         
@@ -366,23 +364,25 @@ class Blockchain:
                         self.chain = [Block.from_dict(block_data) for block_data in data]
                         self.pending_transactions = json.loads(pending_json) if pending_json else []
                         self.participants = json.loads(participants_json) if participants_json else {}
+                        logger.info(f"Ledger loaded: {len(self.chain)} blocks, {len(self.participants)} participants")
                         
-                    except (ValueError, TypeError, KeyError) as e:
+                    except (ValueError, TypeError, KeyError, json.JSONDecodeError) as e:
                         logger.error(f"Error parsing row data: {e}. Row type: {type(row)}")
                         raise Exception(f"Failed to parse ledger data: {e}")
                 else:
                     # No ledger found, create genesis block
+                    logger.info("No ledger found in database. Creating genesis block...")
                     genesis = self.create_genesis_block()
                     self.chain.append(genesis)
                     self.save_to_db()
-                    logger.info("No ledger found. Genesis block created and saved.")
-            
+                    logger.info("Genesis block created and saved.")
+                
             finally:
-                if client:
-                    client.close()
+                client.close()
             
         except Exception as e:
             logger.error(f"Failed to load from Turso: {e}")
+            logger.info("Falling back to local backup...")
             self._load_fallback()
     
     def _load_fallback(self):
@@ -393,11 +393,12 @@ class Blockchain:
                 self.chain = [Block.from_dict(block_data) for block_data in data.get("chain", [])]
                 self.pending_transactions = data.get("pending_transactions", [])
                 self.participants = data.get("participants", {})
-                logger.info("Ledger loaded from fallback file")
+                logger.info(f"Ledger loaded from backup: {len(self.chain)} blocks")
         except FileNotFoundError:
+            logger.info("No backup found. Creating genesis block...")
             genesis = self.create_genesis_block()
             self.chain.append(genesis)
-            logger.info("No fallback found. Genesis block created.")
+            logger.info("Genesis block created.")
     
     def get_chain_data(self) -> List[Dict[str, Any]]:
         return [block.to_dict() for block in self.chain]
