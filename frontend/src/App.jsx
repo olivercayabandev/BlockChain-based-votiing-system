@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useCallback } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { LoginPage } from './components/auth/LoginPage';
@@ -42,30 +42,47 @@ function ProtectedVoterRoute({ children }) {
 }
 
 function AppRoutes() {
+  const navigate = useNavigate();
+  
+  const handleNavigation = useCallback((page) => {
+    const routeMap = {
+      'login': '/',
+      'register': '/register',
+      'admin-login': '/admin-login',
+      'officials-login': '/officials-login',
+      'voter': '/voter',
+      'admin': '/admin',
+      'officials': '/officials',
+      'verify': '/verify',
+      'blockchain': '/blockchain',
+    };
+    navigate(routeMap[page] || '/' + page);
+  }, [navigate]);
+
   return (
     <Routes>
-      <Route path="/" element={<LoginPage onSwitchPage={() => {}} />} />
-      <Route path="/register" element={<RegistrationPage onSwitchPage={() => {}} />} />
-      <Route path="/verify" element={<VerificationTool onSwitchPage={() => {}} />} />
-      <Route path="/blockchain" element={<BlockchainVisualizer onSwitchPage={() => {}} />} />
+      <Route path="/" element={<LoginPage onSwitchPage={handleNavigation} />} />
+      <Route path="/register" element={<RegistrationPage onSwitchPage={handleNavigation} />} />
+      <Route path="/verify" element={<VerificationTool onSwitchPage={handleNavigation} />} />
+      <Route path="/blockchain" element={<BlockchainVisualizer onSwitchPage={handleNavigation} />} />
       
-      <Route path="/admin-login" element={<AdminLoginPage onSwitchPage={() => {}} />} />
+      <Route path="/admin-login" element={<AdminLoginPage onSwitchPage={handleNavigation} />} />
       <Route path="/admin" element={
         <ProtectedAdminRoute>
-          <AdminDashboard onNavigate={() => {}} />
+          <AdminDashboard onNavigate={handleNavigation} />
         </ProtectedAdminRoute>
       } />
       
-      <Route path="/officials-login" element={<OfficialLoginPage onSwitchPage={() => {}} />} />
+      <Route path="/officials-login" element={<OfficialLoginPage onSwitchPage={handleNavigation} />} />
       <Route path="/officials" element={
         <ProtectedOfficialRoute>
-          <OfficialDashboard onNavigate={() => {}} />
+          <OfficialDashboard onNavigate={handleNavigation} />
         </ProtectedOfficialRoute>
       } />
       
       <Route path="/voter" element={
         <ProtectedVoterRoute>
-          <VoterDashboard onNavigate={() => {}} />
+          <VoterDashboard onNavigate={handleNavigation} />
         </ProtectedVoterRoute>
       } />
       
