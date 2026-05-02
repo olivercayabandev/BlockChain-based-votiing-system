@@ -1303,6 +1303,7 @@ async def official_verify_voter(
     
     if action == "approve":
         voter.verification_status = 'approved'
+        voter.is_verified = True
         voter.is_approved = True
         voter.is_active = True
         voter.verified_by = official_id
