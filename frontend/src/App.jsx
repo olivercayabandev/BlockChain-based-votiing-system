@@ -69,20 +69,20 @@ function AppRoutes() {
       <Route path="/admin-login" element={<AdminLoginPage onSwitchPage={handleNavigation} />} />
       <Route path="/admin" element={
         <ProtectedAdminRoute>
-          <AdminDashboard onNavigate={handleNavigation} />
+          <AdminDashboard onSwitchPage={handleNavigation} />
         </ProtectedAdminRoute>
       } />
       
       <Route path="/officials-login" element={<OfficialLoginPage onSwitchPage={handleNavigation} />} />
       <Route path="/officials" element={
         <ProtectedOfficialRoute>
-          <OfficialDashboard onNavigate={handleNavigation} />
+          <OfficialDashboard onSwitchPage={handleNavigation} />
         </ProtectedOfficialRoute>
       } />
       
       <Route path="/voter" element={
         <ProtectedVoterRoute>
-          <VoterDashboard onNavigate={handleNavigation} />
+          <VoterDashboard onSwitchPage={handleNavigation} />
         </ProtectedVoterRoute>
       } />
       
