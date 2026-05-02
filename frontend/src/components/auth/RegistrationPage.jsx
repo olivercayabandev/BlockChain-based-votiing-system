@@ -360,10 +360,10 @@ export function RegistrationPage({ onSwitchPage }) {
           </button>
           
           <button
-            style={{ ...styles.button, ...styles.buttonSecondary, marginTop: '12px' }}
+            style={{ ...styles.button, ...styles.buttonSecondary, marginTop: '12px', cursor: 'pointer', zIndex: 9999 }}
             type="button"
             onClick={() => {
-              console.log('Back to Login clicked');
+              alert('Back to Login clicked!');
               onSwitchPage('login');
             }}
           >
