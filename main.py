@@ -1005,6 +1005,47 @@ async def voter_setup_pin(request: Request, db: SessionLocal = Depends(get_db)):
     }
 
 
+@app.post("/api/official/register")
+async def official_register(request: Request, db: SessionLocal = Depends(get_db)):
+    """Register a new election official"""
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse(status_code=400, content={"detail": "Invalid JSON body"})
+    
+    official_id = data.get("official_id", "").strip()
+    name = data.get("name", "").strip()
+    pin = data.get("pin", "")
+    role = data.get("role", "officer")
+    
+    if not official_id or not name or not pin:
+        return JSONResponse(status_code=400, content={"detail": "Official ID, name, and PIN are required"})
+    
+    if not pin.isdigit() or len(pin) != 6:
+        return JSONResponse(status_code=400, content={"detail": "PIN must be exactly 6 digits"})
+    
+    existing = db.query(ElectionOfficial).filter(ElectionOfficial.official_id == official_id).first()
+    if existing:
+        return JSONResponse(status_code=400, content={"detail": "Official ID already exists"})
+    
+    pin_hash = hash_pin(pin)
+    now = datetime.utcnow().isoformat()
+    
+    new_official = ElectionOfficial(
+        official_id=official_id,
+        name=name,
+        pin_hash=pin_hash,
+        role=role,
+        is_active=True,
+        is_pin_set=True
+    )
+    
+    db.add(new_official)
+    db.commit()
+    
+    return {"message": "Official registered successfully", "official_id": official_id, "name": name, "role": role}
+
+
 @app.post("/api/official/login")
 async def official_login(request: Request, db: SessionLocal = Depends(get_db)):
     try:
