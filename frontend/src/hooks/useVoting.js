@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { API_URL } from '../utils/validation';
 
 async function safeJson(response) {
   try {
@@ -30,11 +29,11 @@ export function useVoting(token, residentId) {
     
     try {
       const [posRes, candRes, gasRes, votedRes, statusRes] = await Promise.all([
-        fetch(`${API_URL}/api/positions`),
-        fetch(`${API_URL}/api/candidates`),
-        fetch(`${API_URL}/api/gas/${residentId}?token=${token}`),
-        fetch(`${API_URL}/api/voted-positions/${residentId}?token=${token}`),
-        fetch(`${API_URL}/api/vote-status/${residentId}?token=${token}`)
+        fetch(`/api/positions`),
+        fetch(`/api/candidates`),
+        fetch(`/api/gas/${residentId}?token=${token}`),
+        fetch(`/api/voted-positions/${residentId}?token=${token}`),
+        fetch(`/api/vote-status/${residentId}?token=${token}`)
       ]);
 
       const gasData = await safeJson(gasRes);
@@ -71,7 +70,7 @@ export function useVoting(token, residentId) {
     setError(null);
     
     try {
-      const res = await fetch(`${API_URL}/api/vote`, {
+      const res = await fetch(`/api/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

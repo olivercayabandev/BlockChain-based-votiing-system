@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { API_URL, validatePosition, validateCandidate } from '../utils/validation';
+import { validatePosition, validateCandidate } from '../utils/validation';
 
 export function useElectionSetup(token, onUpdate) {
   const [newPosition, setNewPosition] = useState({ title: '', max_votes: 1 });
@@ -17,7 +17,7 @@ export function useElectionSetup(token, onUpdate) {
 
   const fetchPositions = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/positions`);
+      const res = await fetch(`/api/positions`);
       const data = await res.json();
       setLocalPositions(data);
       return data;
@@ -29,7 +29,7 @@ export function useElectionSetup(token, onUpdate) {
 
   const fetchCandidates = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/candidates`);
+      const res = await fetch(`/api/candidates`);
       const data = await res.json();
       setLocalCandidates(data);
       return data;
@@ -50,7 +50,7 @@ export function useElectionSetup(token, onUpdate) {
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/positions`, {
+      const res = await fetch(`/api/positions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -79,7 +79,7 @@ export function useElectionSetup(token, onUpdate) {
   const deletePosition = useCallback(async (id) => {
     setLoading(true);
     try {
-      await fetch(`${API_URL}/api/positions/${id}`, { method: 'DELETE' });
+      await fetch(`/api/positions/${id}`, { method: 'DELETE' });
       await fetchPositions();
       await fetchCandidates();
       onUpdate?.();
@@ -106,7 +106,7 @@ export function useElectionSetup(token, onUpdate) {
         position_id: parseInt(newCandidate.position_id, 10)
       };
 
-      const res = await fetch(`${API_URL}/api/candidates`, {
+      const res = await fetch(`/api/candidates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

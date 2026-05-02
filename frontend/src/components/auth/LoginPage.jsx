@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useAuth } from '../../context/AuthContext';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = '';
 
 export function LoginPage({ onSwitchPage }) {
   const { isMobile } = useBreakpoint();
@@ -140,7 +140,7 @@ export function LoginPage({ onSwitchPage }) {
     setError('');
 
     try {
-      const res = await fetch(`${API_URL}/api/voter/setup-pin`, {
+      const res = await fetch(`/api/voter/setup-pin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

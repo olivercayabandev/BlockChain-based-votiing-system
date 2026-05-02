@@ -1,8 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
 export function RegistrationPage({ onSwitchPage }) {
   const [formData, setFormData] = useState({
     resident_id: '',
@@ -19,6 +17,7 @@ export function RegistrationPage({ onSwitchPage }) {
   const [success, setSuccess] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [pinDisplay, setPinDisplay] = useState('');
+  const [countdown, setCountdown] = useState(5);
   const [idPhotoFront, setIdPhotoFront] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -32,12 +31,12 @@ export function RegistrationPage({ onSwitchPage }) {
   const handlePhotoUpload = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+    
     if (file.size > 5 * 1024 * 1024) {
       setError('Image too large. Max 5MB.');
       return;
     }
-
+    
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64 = reader.result.split(',')[1];
@@ -49,7 +48,7 @@ export function RegistrationPage({ onSwitchPage }) {
 
   const handleSubmit = useCallback(async () => {
     setError('');
-
+    
     if (!formData.resident_id.trim()) {
       setError('Resident ID is required');
       return;
@@ -82,11 +81,11 @@ export function RegistrationPage({ onSwitchPage }) {
       setError('You must agree to the Data Privacy Act consent');
       return;
     }
-
+    
     setLoading(true);
-
+    
     try {
-      const res = await fetch(`${API_URL}/api/register`, {
+      const res = await fetch(`/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, pin })
@@ -106,9 +105,7 @@ export function RegistrationPage({ onSwitchPage }) {
       
       setSuccess(data.message);
       setPinDisplay(pin);
-      setTimeout(() => {
-        onSwitchPage('login');
-      }, 5000);
+      setCountdown(5);
     } catch (err) {
       if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
         setError('Cannot connect to server. Please check your connection.');
@@ -120,6 +117,24 @@ export function RegistrationPage({ onSwitchPage }) {
     }
   }, [formData, pin, confirmPin, onSwitchPage]);
 
+  useEffect(() => {
+    let interval;
+    if (success && pinDisplay) {
+      setCountdown(5);
+      interval = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            onSwitchPage('login');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [success, pinDisplay, onSwitchPage]);
+
   const styles = {
     container: { maxWidth: '100%', margin: '0 auto', padding: '16px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif' },
     loginBox: { maxWidth: '500px', margin: '0 auto', paddingTop: '20px', paddingBottom: '20px' },
@@ -127,7 +142,7 @@ export function RegistrationPage({ onSwitchPage }) {
     input: { width: '100%', paddingTop: '10px', paddingBottom: '10px', paddingLeft: '12px', paddingRight: '12px', borderRadius: '6px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#d1d5db', fontSize: '14px', marginBottom: '12px', outline: 'none', boxSizing: 'border-box' },
     button: { paddingTop: '10px', paddingBottom: '10px', paddingLeft: '20px', paddingRight: '20px', borderRadius: '6px', border: 'none', fontSize: '14px', fontWeight: '500', cursor: 'pointer', width: '100%' },
     buttonPrimary: { backgroundColor: '#0d9488', color: '#fff' },
-    buttonSecondary: { backgroundColor: '#f3f4f6', color: '#374151' },
+    buttonSecondary: { backgroundColor: '#f3f4f6', color: '#374151', transition: 'all 0.2s', ':hover': { backgroundColor: '#e5e7eb' } },
     alert: { paddingTop: '12px', paddingBottom: '12px', paddingLeft: '16px', paddingRight: '16px', borderRadius: '6px', marginBottom: '12px', fontSize: '14px' },
     alertRed: { backgroundColor: '#fef2f2', color: '#991b1b' },
     alertGreen: { backgroundColor: '#f0fdf4', color: '#166534' },
@@ -167,7 +182,7 @@ export function RegistrationPage({ onSwitchPage }) {
     barangay_id: 'Your ID number',
   };
 
-  if (success && pinDisplay) {
+    if (success && pinDisplay) {
     return (
       <div style={styles.container}>
         <div style={styles.loginBox}>
@@ -196,8 +211,8 @@ export function RegistrationPage({ onSwitchPage }) {
               </span>
             </div>
             
-            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '13px' }}>
-              Redirecting to login in 5 seconds...
+            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '13px', marginTop: '12px' }}>
+              Redirecting to login in {countdown} seconds...
             </p>
           </div>
         </div>
@@ -215,8 +230,10 @@ export function RegistrationPage({ onSwitchPage }) {
         <div style={styles.card}>
           <div style={styles.row}>
             <div style={styles.col}>
-              <label style={styles.label}>Resident ID *</label>
+              <label style={styles.label} htmlFor="resident_id">Resident ID *</label>
               <input
+                id="resident_id"
+                name="resident_id"
                 style={styles.input}
                 placeholder="e.g., 2026-0001"
                 value={formData.resident_id}
@@ -225,8 +242,10 @@ export function RegistrationPage({ onSwitchPage }) {
               />
             </div>
             <div style={styles.col}>
-              <label style={styles.label}>Full Name *</label>
+              <label style={styles.label} htmlFor="full_name">Full Name *</label>
               <input
+                id="full_name"
+                name="full_name"
                 style={styles.input}
                 placeholder="Enter your full name"
                 value={formData.name}
@@ -235,9 +254,11 @@ export function RegistrationPage({ onSwitchPage }) {
               />
             </div>
           </div>
-
-          <label style={styles.label}>ID Type *</label>
+          
+          <label style={styles.label} htmlFor="id_type">ID Type *</label>
           <select
+            id="id_type"
+            name="id_type"
             style={styles.select}
             value={formData.id_type}
             onChange={(e) => updateField('id_type', e.target.value)}
@@ -248,9 +269,11 @@ export function RegistrationPage({ onSwitchPage }) {
               <option key={type.value} value={type.value}>{type.label}</option>
             ))}
           </select>
-
-          <label style={styles.label}>ID Number *</label>
+          
+          <label style={styles.label} htmlFor="id_number">ID Number *</label>
           <input
+            id="id_number"
+            name="id_number"
             style={styles.input}
             placeholder={formData.id_type ? ID_HINTS[formData.id_type] : 'Select ID type first'}
             value={formData.id_number}
@@ -258,10 +281,12 @@ export function RegistrationPage({ onSwitchPage }) {
             aria-label="ID Number"
             disabled={!formData.id_type}
           />
-
+          
           <div style={{ ...styles.pinBox, backgroundColor: '#f0fdfa', borderColor: '#0d9488' }}>
-            <label style={styles.label}>Set Your 6-digit PIN *</label>
+            <label style={styles.label} htmlFor="pin">Set Your 6-digit PIN *</label>
             <input
+              id="pin"
+              name="pin"
               type={showPin ? 'text' : 'password'}
               style={styles.input}
               placeholder="Enter 6-digit PIN"
@@ -271,6 +296,8 @@ export function RegistrationPage({ onSwitchPage }) {
               aria-label="PIN"
             />
             <input
+              id="confirm_pin"
+              name="confirm_pin"
               type={showPin ? 'text' : 'password'}
               style={styles.input}
               placeholder="Confirm PIN"
@@ -279,8 +306,10 @@ export function RegistrationPage({ onSwitchPage }) {
               maxLength={6}
               aria-label="Confirm PIN"
             />
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }} htmlFor="show_pin">
               <input
+                id="show_pin"
+                name="show_pin"
                 type="checkbox"
                 checked={showPin}
                 onChange={(e) => setShowPin(e.target.checked)}
@@ -291,7 +320,7 @@ export function RegistrationPage({ onSwitchPage }) {
               <strong>Important:</strong> You will need this PIN to vote. Write it down and keep it safe!
             </p>
           </div>
-
+          
           <label style={styles.label}>ID Photo (Front) - Optional</label>
           <input
             type="file"
@@ -319,10 +348,12 @@ export function RegistrationPage({ onSwitchPage }) {
               </button>
             </div>
           )}
-
+          
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', marginTop: '12px', marginBottom: '12px' }}>
             <input
               type="checkbox"
+              id="consent"
+              name="consent"
               checked={formData.consent_given}
               onChange={(e) => updateField('consent_given', e.target.checked)}
               style={{ marginTop: '4px' }}
@@ -332,9 +363,9 @@ export function RegistrationPage({ onSwitchPage }) {
               I agree to the Data Privacy Act (R.A. 10173) consent and confirm that all information provided is accurate.
             </span>
           </label>
-
+          
           {error && <div style={{ ...styles.alert, ...styles.alertRed }} role="alert">{error}</div>}
-
+          
           <button
             style={{ ...styles.button, ...styles.buttonPrimary }}
             onClick={handleSubmit}
@@ -343,10 +374,13 @@ export function RegistrationPage({ onSwitchPage }) {
           >
             {loading ? 'Registering...' : 'Register & Set PIN'}
           </button>
-
+          
           <button
-            style={{ ...styles.button, ...styles.buttonSecondary, marginTop: '12px' }}
-            onClick={() => onSwitchPage('login')}
+            style={{ ...styles.button, ...styles.buttonSecondary, marginTop: '12px', cursor: 'pointer', zIndex: 9999 }}
+            type="button"
+            onClick={() => {
+              onSwitchPage('login');
+            }}
           >
             Back to Login
           </button>

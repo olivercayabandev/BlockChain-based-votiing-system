@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { API_URL } from '../../utils/validation';
+import { validateResidentId, validateName, validatePhoneNumber } from '../../utils/validation';
 
 const ID_TYPES = ['resident_id', 'national_id', 'student_id', 'passport', 'drivers_license', 'senior_citizen', 'pwd', 'barangay_id'];
 
@@ -94,7 +94,7 @@ export function BulkImport({ token, onImportComplete }) {
             return row;
           }).filter(row => row.resident_id && row.name);
 
-          const res = await fetch(`${API_URL}/api/admin/import-voters-batch?token=${token}`, {
+          const res = await fetch(`/api/admin/import-voters-batch?token=${token}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ voters })

@@ -1,5 +1,3 @@
-const API_URL = import.meta.env.VITE_API_URL || '';
-
 export function validateResidentId(id) {
   if (!id || id.trim().length === 0) return 'Resident ID is required';
   if (id.length < 3) return 'Resident ID must be at least 3 characters';
@@ -50,4 +48,4 @@ export function validatePosition(position) {
   return errors;
 }
 
-export { API_URL };
+export {};

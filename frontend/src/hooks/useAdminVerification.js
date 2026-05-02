@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { API_URL } from '../utils/validation';
 
 async function safeJson(response) {
   try {
@@ -25,7 +24,7 @@ export function useAdminVerification(token) {
     setError(null);
     
     try {
-      const res = await fetch(`${API_URL}/api/admin/verification-queue?token=${token}`);
+      const res = await fetch(`/api/admin/verification-queue?token=${token}`);
       const data = await safeJson(res);
       
       if (!res.ok) {
@@ -49,7 +48,7 @@ export function useAdminVerification(token) {
     setLoading(true);
     
     try {
-      const res = await fetch(`${API_URL}/api/admin/verify-voter/${residentId}`, {
+      const res = await fetch(`/api/admin/verify-voter/${residentId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, reason, notes, token })
@@ -86,7 +85,7 @@ export function useAdminVerification(token) {
     setLoading(true);
     
     try {
-      const res = await fetch(`${API_URL}/api/admin/approve-all-pending?token=${token}`, {
+      const res = await fetch(`/api/admin/approve-all-pending?token=${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm: true })
@@ -115,7 +114,7 @@ export function useAdminVerification(token) {
     setLoading(true);
     
     try {
-      const res = await fetch(`${API_URL}/api/admin/import-voters-batch?token=${token}`, {
+      const res = await fetch(`/api/admin/import-voters-batch?token=${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ voters: votersData })

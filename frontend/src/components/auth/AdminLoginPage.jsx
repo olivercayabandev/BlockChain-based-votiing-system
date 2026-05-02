@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://votechain-backend-ueuj.onrender.com';
+const API_URL = '';
 
 const theme = {
   colors: {
@@ -61,7 +61,7 @@ export function AdminLoginPage({ onSwitchPage }) {
     setError('');
 
     try {
-      const res = await fetch(`${API_URL}/api/admin/login`, {
+      const res = await fetch(`/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password })

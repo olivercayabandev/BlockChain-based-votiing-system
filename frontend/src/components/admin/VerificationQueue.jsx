@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { useToast } from '../../hooks/useToast';
-import { API_URL } from '../../utils/validation';
+import { validateResidentId } from '../../utils/validation';
 
 const styles = {
   container: { maxWidth: '1200px', margin: '0 auto', padding: '20px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif' },
@@ -28,7 +28,7 @@ export function VerificationQueue({ token }) {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/verification-queue?token=${token}`);
+      const res = await fetch(`/api/admin/verification-queue?token=${token}`);
       if (!res.ok) throw new Error('Failed to fetch verification queue');
       const data = await res.json();
       setQueue(data);

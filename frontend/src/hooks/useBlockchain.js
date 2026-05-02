@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { API_URL } from '../utils/validation';
 
 export function useBlockchain() {
   const [chainData, setChainData] = useState([]);
@@ -12,7 +11,7 @@ export function useBlockchain() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/blockchain`);
+      const res = await fetch(`/api/blockchain`);
       if (!res.ok) {
         throw new Error('Failed to fetch blockchain data');
       }
@@ -33,7 +32,7 @@ export function useBlockchain() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/verify/${encodeURIComponent(hash)}`);
+      const res = await fetch(`/api/verify/${encodeURIComponent(hash)}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.detail || data.message || 'Transaction not found');

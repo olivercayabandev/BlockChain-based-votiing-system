@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = '';
 
 export function OfficialDashboard({ onNavigate }) {
   const { isMobile } = useBreakpoint();
@@ -63,7 +63,7 @@ export function OfficialDashboard({ onNavigate }) {
     if (isInitial) setLoading(true);
     
     try {
-      const res = await fetch(`${API_URL}/api/official/pending-voters?token=${officialToken}`);
+      const res = await fetch(`/api/official/pending-voters?token=${officialToken}`);
       if (!res.ok) throw new Error('Failed to fetch voters');
       
       const data = await res.json();
@@ -108,7 +108,7 @@ export function OfficialDashboard({ onNavigate }) {
 
   const handleStartReview = useCallback(async (residentId) => {
     try {
-      const res = await fetch(`${API_URL}/api/official/start-review/${residentId}?token=${officialToken}`, {
+      const res = await fetch(`/api/official/start-review/${residentId}?token=${officialToken}`, {
         method: 'POST'
       });
       const data = await res.json();
@@ -127,7 +127,7 @@ export function OfficialDashboard({ onNavigate }) {
 
   const handleEndReview = useCallback(async (residentId) => {
     try {
-      await fetch(`${API_URL}/api/official/end-review/${residentId}?token=${officialToken}`, {
+      await fetch(`/api/official/end-review/${residentId}?token=${officialToken}`, {
         method: 'POST'
       });
     } catch (err) {
@@ -140,7 +140,7 @@ export function OfficialDashboard({ onNavigate }) {
     const action = 'approve';
     
     try {
-      const res = await fetch(`${API_URL}/api/official/verify-voter/${voter.resident_id}`, {
+      const res = await fetch(`/api/official/verify-voter/${voter.resident_id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ official_id: officialId, action })
@@ -164,7 +164,7 @@ export function OfficialDashboard({ onNavigate }) {
     const action = 'reject';
     
     try {
-      const res = await fetch(`${API_URL}/api/official/verify-voter/${selectedVoter.resident_id}`, {
+      const res = await fetch(`/api/official/verify-voter/${selectedVoter.resident_id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ official_id: officialId, action, reason: rejectReason })

@@ -7,7 +7,7 @@ import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 const GAS_FEE = 0.05;
 
-export function VoterDashboard() {
+export function VoterDashboard({ onSwitchPage }) {
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('voter-dark-mode');
     return saved === 'true';
@@ -398,7 +398,7 @@ export function VoterDashboard() {
 }
 
 VoterDashboard.propTypes = {
-  onNavigate: PropTypes.func.isRequired,
+  onSwitchPage: PropTypes.func.isRequired,
 };
 
 VoterDashboard.defaultProps = {

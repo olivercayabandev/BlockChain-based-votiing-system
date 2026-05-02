@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = '';
 
 export function SystemReset({ token }) {
   const [confirmText, setConfirmText] = useState('');
@@ -23,7 +23,7 @@ export function SystemReset({ token }) {
     setResult(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/admin/hard-reset?token=${encodeURIComponent(token)}`, {
+      const response = await fetch(`/api/admin/hard-reset?token=${encodeURIComponent(token)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

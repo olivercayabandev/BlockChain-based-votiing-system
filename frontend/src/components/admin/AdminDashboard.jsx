@@ -10,9 +10,9 @@ import { BlockchainVisualizer } from '../shared/BlockchainVisualizer';
 import { VerificationTool } from '../shared/VerificationTool';
 import { SystemReset } from './SystemReset';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = '';
 
-export function AdminDashboard() {
+export function AdminDashboard({ onSwitchPage }) {
   const { isMobile, isTablet } = useBreakpoint();
   const adminToken = localStorage.getItem('admin-token');
   const { toasts, removeToast, success, error: showError } = useToast();
@@ -301,11 +301,13 @@ const styles = {
         <ElectionSetup onUpdate={fetchData} />
       )}
 
-      {activeTab === 'blockchain' && <BlockchainVisualizer onSwitchPage={() => {}} />}
-      {activeTab === 'verify' && <VerificationTool onSwitchPage={() => {}} />}
+      {activeTab === 'blockchain' && <BlockchainVisualizer onSwitchPage={handleNavigation} />}
+      {activeTab === 'verify' && <VerificationTool onSwitchPage={handleNavigation} />}
       {activeTab === 'reset' && <SystemReset token={adminToken} />}
     </div>
   );
 }
 
-AdminDashboard.propTypes = {};
+AdminDashboard.propTypes = {
+  onSwitchPage: PropTypes.func.isRequired,
+};
