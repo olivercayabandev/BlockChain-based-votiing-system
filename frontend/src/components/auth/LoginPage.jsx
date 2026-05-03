@@ -22,7 +22,7 @@ export function LoginPage({ onSwitchPage }) {
   const styles = {
     container: { maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '12px' : '20px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif' },
     card: { backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', padding: isMobile ? '16px' : '24px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
-    input: { width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '16px', outline: 'none', boxSizing: 'border-box' },
+    input: { width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '16px', color: '#111827', outline: 'none', boxSizing: 'border-box', backgroundColor: '#fff' },
     button: { padding: '12px 20px', borderRadius: '6px', border: 'none', fontSize: '16px', fontWeight: '500', cursor: 'pointer', width: '100%' },
     buttonPrimary: { backgroundColor: '#0d9488', color: '#fff' },
     buttonSecondary: { backgroundColor: '#f3f4f6', color: '#374151' },
@@ -33,7 +33,7 @@ export function LoginPage({ onSwitchPage }) {
     title: { fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#111827', marginBottom: '8px' },
     textMuted: { color: '#6b7280', fontSize: '14px' },
     loginBox: { maxWidth: '400px', margin: '0 auto', paddingTop: isMobile ? '20px' : '40px' },
-    select: { width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '16px', backgroundColor: '#fff', marginBottom: '12px', boxSizing: 'border-box' },
+    select: { width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '16px', color: '#111827', backgroundColor: '#fff', marginBottom: '12px', boxSizing: 'border-box' },
     infoBox: { backgroundColor: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '6px', padding: '12px', marginBottom: '16px', fontSize: '13px', color: '#134e4a' },
     pinBox: { backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px', marginBottom: '12px' },
   };
