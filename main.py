@@ -184,11 +184,12 @@ class ElectionOfficial(Base):
 
 class Admin(Base):
     __tablename__ = "admins"
-
+    
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
+    is_pin_set = Column(Boolean, default=True)  # Admin PIN is always set
     failed_attempts = Column(Integer, default=0)
     locked_until = Column(String(50), nullable=True)
     created_at = Column(String(50), default=lambda: datetime.utcnow().isoformat())
