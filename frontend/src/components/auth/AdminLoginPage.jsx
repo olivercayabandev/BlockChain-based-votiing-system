@@ -34,7 +34,7 @@ export function AdminLoginPage({ onSwitchPage }) {
     header: { textAlign: 'center', marginBottom: '28px' },
     title: { fontSize: '26px', fontWeight: '700', color: theme.colors.text, marginBottom: '8px' },
     subtitle: { fontSize: '14px', color: theme.colors.textMuted },
-    input: { width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${theme.colors.border}`, fontSize: '16px', outline: 'none', boxSizing: 'border-box', backgroundColor: theme.colors.surface, transition: 'border-color 0.2s', focus: { borderColor: theme.colors.primary, boxShadow: '0 0 0 3px rgba(30, 64, 175, 0.1)' } },
+    input: { width: '100%', padding: '14px 16px', borderRadius: '8px', border: `1px solid ${theme.colors.border}`, fontSize: '16px', color: theme.colors.text, outline: 'none', boxSizing: 'border-box', backgroundColor: theme.colors.surface, transition: 'border-color 0.2s', focus: { borderColor: theme.colors.primary, boxShadow: '0 0 0 3px rgba(30, 64, 175, 0.1)' } },
     button: { padding: '14px 24px', borderRadius: '8px', border: 'none', fontSize: '16px', fontWeight: '600', cursor: 'pointer', width: '100%', transition: 'all 0.2s' },
     buttonPrimary: { backgroundColor: theme.colors.primary, color: '#fff' },
     buttonSecondary: { backgroundColor: '#f1f5f9', color: theme.colors.text },
