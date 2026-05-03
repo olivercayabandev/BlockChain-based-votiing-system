@@ -697,18 +697,27 @@ async def register(request: Request, db: SessionLocal = Depends(get_db)):
             content={"detail": "Request body must be a JSON object"}
         )
     
-    resident_id = data.get("resident_id", "").strip()
+    # Auto-generate resident_id in format 2026-XXX
+    # Find the highest existing ID with 2026- prefix
+    highest = db.query(Voter).filter(Voter.resident_id.like("2026-%")).all()
+    max_num = 0
+    for v in highest:
+        try:
+            num = int(v.resident_id.split("-")[1])
+            max_num = max(max_num, num)
+        except:
+            pass
+    resident_id = f"2026-{max_num + 1:03d}"
+    
     name = data.get("name", "").strip()
     id_type = data.get("id_type", "")
     id_number = data.get("id_number", "")
     pin = data.get("pin", "")
     consent_given = data.get("consent_given", False)
     
-    if not resident_id:
-        return JSONResponse(
-            status_code=400,
-            content={"detail": "Resident ID is required"}
-        )
+    # Skip resident_id validation since we auto-generate it
+    # if not resident_id:  # Commented out - auto-generated
+    #     return JSONResponse(...)
     
     if not name:
         return JSONResponse(

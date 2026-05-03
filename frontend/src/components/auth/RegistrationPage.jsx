@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 export function RegistrationPage({ onSwitchPage }) {
   const [formData, setFormData] = useState({
-    resident_id: '',
+    resident_id: '', // Will be auto-generated
     name: '',
     id_type: '',
     id_number: '',
