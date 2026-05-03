@@ -49,10 +49,7 @@ export function RegistrationPage({ onSwitchPage }) {
   const handleSubmit = useCallback(async () => {
     setError('');
     
-    if (!formData.resident_id.trim()) {
-      setError('Resident ID is required');
-      return;
-    }
+    // Resident ID is auto-generated, no validation needed
     if (!formData.name.trim()) {
       setError('Full name is required');
       return;
