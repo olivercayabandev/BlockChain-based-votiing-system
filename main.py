@@ -1046,6 +1046,20 @@ async def official_register(request: Request, db: SessionLocal = Depends(get_db)
     return {"message": "Official registered successfully", "official_id": official_id, "name": name, "role": role}
 
 
+@app.get("/api/official/list")
+def list_officials(db: SessionLocal = Depends(get_db)):
+    """List all election officials"""
+    officials = db.query(ElectionOfficial).all()
+    return [{
+        "official_id": o.official_id,
+        "name": o.name,
+        "role": o.role,
+        "is_active": o.is_active,
+        "is_pin_set": o.is_pin_set,
+        "last_login": o.last_login
+    } for o in officials]
+
+
 @app.post("/api/official/login")
 async def official_login(request: Request, db: SessionLocal = Depends(get_db)):
     try:
