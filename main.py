@@ -2282,7 +2282,7 @@ def get_stats(db: SessionLocal = Depends(get_db)):
 
 @app.get("/api/health")
 def health_check():
-    """Health check endpoint for monitoring"""
+    """Health check endpoint for monitoring - v2.1"""
     ledger_valid = blockchain.is_chain_valid()
     
     # Check if Turso is connected
