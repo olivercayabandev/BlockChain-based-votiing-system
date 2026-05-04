@@ -224,33 +224,22 @@ export function RegistrationPage({ onSwitchPage }) {
           <h1 style={styles.title}>Voter Registration</h1>
           <p style={styles.textMuted}>Submit your ID for verification</p>
         </div>
-        <div style={styles.card}>
-          <div style={styles.row}>
-            <div style={styles.col}>
-              <label style={styles.label} htmlFor="resident_id">Resident ID *</label>
-              <input
-                id="resident_id"
-                name="resident_id"
-                style={styles.input}
-                placeholder="e.g., 2026-0001"
-                value={formData.resident_id}
-                onChange={(e) => updateField('resident_id', e.target.value)}
-                aria-label="Resident ID"
-              />
-            </div>
-            <div style={styles.col}>
+          <div style={styles.card}>
+            <div style={{ marginBottom: '12px' }}>
               <label style={styles.label} htmlFor="full_name">Full Name *</label>
               <input
                 id="full_name"
                 name="full_name"
-                style={styles.input}
-                placeholder="Enter your full name"
+                type="text"
+                style={{ ...styles.input, marginBottom: '0' }}
+                placeholder="Juan Dela Cruz"
                 value={formData.name}
                 onChange={(e) => updateField('name', e.target.value)}
+                required
+                autoFocus
                 aria-label="Full Name"
               />
             </div>
-          </div>
           
           <label style={styles.label} htmlFor="id_type">ID Type *</label>
           <select
