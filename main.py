@@ -2129,13 +2129,11 @@ async def import_voters_batch(request: Request, token: str, db: SessionLocal = D
         body = await request.json()
         # Handle both {"voters": [...]} and direct array [...]
         if isinstance(body, dict):
-            request_data = body.get("voters", [])
+            voters_data = body.get("voters", [])
         else:
-            request_data = body if isinstance(body, list) else []
+            voters_data = body if isinstance(body, list) else []
     except:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
-    
-    voters_data = request_data.get("voters", [])
     imported = 0
     duplicates = 0
     errors = []
