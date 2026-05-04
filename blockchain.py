@@ -336,35 +336,42 @@ class Blockchain:
                     row = rows[0]
                     
                     try:
-                        # FIX: Handle dict, Row object, and tuple response formats
+                        # FIX: Handle libsql_client.result.Row objects properly
+                        # libsql Row objects are tuple-like, accessed by index
                         chain_json = None
                         pending_json = None
                         participants_json = None
                         stored_hmac = None
                         
-                        # Try dict-like access first (works for dict and libsql Row)
-                        try:
-                            # libsql Row objects support both [] and .get()
-                            if hasattr(row, 'get') and callable(row.get):
-                                chain_json = row.get('chain_data')
-                                pending_json = row.get('pending_transactions')
-                                participants_json = row.get('participants')
-                                stored_hmac = row.get('hmac')
-                            elif hasattr(row, '__getitem__'):
-                                # Assume it's a dict or supports indexing
-                                chain_json = row['chain_data'] if isinstance(row, dict) else row[0]
-                                pending_json = row['pending_transactions'] if isinstance(row, dict) else row[1]
-                                participants_json = row['participants'] if isinstance(row, dict) else row[2]
-                                stored_hmac = row['hmac'] if isinstance(row, dict) else row[3]
-                        except (KeyError, IndexError, TypeError) as e:
-                            # Fallback: try positional access
-                            if isinstance(row, (list, tuple)) and len(row) >= 4:
-                                chain_json = row[0]
-                                pending_json = row[1]
-                                participants_json = row[2]
-                                stored_hmac = row[3]
+                        # Handle different row formats
+                        if hasattr(row, '__getitem__'):
+                            # Check if row is dict-like or tuple-like
+                            if isinstance(row, dict):
+                                # Dict format
+                                chain_json = row.get('chain_data') or row.get(0)
+                                pending_json = row.get('pending_transactions') or row.get(1)
+                                participants_json = row.get('participants') or row.get(2)
+                                stored_hmac = row.get('hmac') or row.get(3)
+                            elif hasattr(row, 'keys'):
+                                # Row has keys method (libsql Row)
+                                try:
+                                    # Try dict access first
+                                    chain_json = row['chain_data']
+                                    pending_json = row['pending_transactions']
+                                    participants_json = row['participants']
+                                    stored_hmac = row['hmac']
+                                except (KeyError, TypeError):
+                                    # Fall back to index access
+                                    chain_json = row[0] if len(row) > 0 else None
+                                    pending_json = row[1] if len(row) > 1 else None
+                                    participants_json = row[2] if len(row) > 2 else None
+                                    stored_hmac = row[3] if len(row) > 3 else None
                             else:
-                                raise ValueError(f"Cannot parse row: {e}, row: {row}")
+                                # Tuple/list format - use index
+                                chain_json = row[0] if len(row) > 0 else None
+                                pending_json = row[1] if len(row) > 1 else None
+                                participants_json = row[2] if len(row) > 2 else None
+                                stored_hmac = row[3] if len(row) > 3 else None
                         
                         # Verify HMAC
                         if stored_hmac and chain_json:
