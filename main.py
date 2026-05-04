@@ -2121,8 +2121,8 @@ async def import_voters_batch_preflight():
 @app.post("/api/admin/import-voters-batch")
 async def import_voters_batch(request: Request, token: str, db: SessionLocal = Depends(get_db)):
     """Import voters from JSON array - trusts the list as pre-verified"""
-    admin_resident = verify_token(token)
-    if not admin_resident:
+    admin_ident = verify_token(token)
+    if not admin_ident:
         raise HTTPException(status_code=401, detail="Invalid token")
     
     try:
@@ -2132,11 +2132,21 @@ async def import_voters_batch(request: Request, token: str, db: SessionLocal = D
             voters_data = body.get("voters", [])
         else:
             voters_data = body if isinstance(body, list) else []
-    except:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
+    
     imported = 0
     duplicates = 0
     errors = []
+    
+    if not voters_data:
+        return JSONResponse({
+            "success": True,
+            "imported": 0,
+            "duplicates": 0,
+            "errors": [],
+            "message": "No voters to import"
+        })
     
     for v in voters_data:
         try:
