@@ -41,7 +41,7 @@ function ProtectedVoterRoute({ children }) {
   return children;
 }
 
-function AppRoutes() {
+function AppRoutes({ onSwitchPage }) {
   const navigate = useNavigate();
   
   const handleNavigation = useCallback((page) => {
@@ -60,35 +60,35 @@ function AppRoutes() {
   }, [navigate]);
 
   return (
-    <Routes>
-      <Route path="/" element={<LoginPage onSwitchPage={handleNavigation} />} />
-      <Route path="/register" element={<RegistrationPage onSwitchPage={handleNavigation} />} />
-      <Route path="/verify" element={<VerificationTool onSwitchPage={handleNavigation} />} />
-      <Route path="/blockchain" element={<BlockchainVisualizer onSwitchPage={handleNavigation} />} />
-      
-      <Route path="/admin-login" element={<AdminLoginPage onSwitchPage={handleNavigation} />} />
-      <Route path="/admin" element={
-        <ProtectedAdminRoute>
-          <AdminDashboard onSwitchPage={handleNavigation} />
-        </ProtectedAdminRoute>
-      } />
-      
-      <Route path="/officials-login" element={<OfficialLoginPage onSwitchPage={handleNavigation} />} />
-      <Route path="/officials" element={
-        <ProtectedOfficialRoute>
-          <OfficialDashboard onSwitchPage={handleNavigation} />
-        </ProtectedOfficialRoute>
-      } />
-      
-      <Route path="/voter" element={
-        <ProtectedVoterRoute>
-          <VoterDashboard onSwitchPage={handleNavigation} />
-        </ProtectedVoterRoute>
-      } />
-      
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+      <Routes>
+        <Route path="/" element={<LoginPage onSwitchPage={onSwitchPage} />} />
+        <Route path="/register" element={<RegistrationPage onSwitchPage={onSwitchPage} />} />
+        <Route path="/verify" element={<VerificationTool onSwitchPage={onSwitchPage} />} />
+        <Route path="/blockchain" element={<BlockchainVisualizer onSwitchPage={onSwitchPage} />} />
+        
+        <Route path="/admin-login" element={<AdminLoginPage onSwitchPage={onSwitchPage} />} />
+        <Route path="/admin" element={
+          <ProtectedAdminRoute>
+            <AdminDashboard onSwitchPage={onSwitchPage} />
+          </ProtectedAdminRoute>
+        } />
+        
+        <Route path="/officials-login" element={<OfficialLoginPage onSwitchPage={onSwitchPage} />} />
+        <Route path="/officials" element={
+          <ProtectedOfficialRoute>
+            <OfficialDashboard onSwitchPage={onSwitchPage} />
+          </ProtectedOfficialRoute>
+        } />
+        
+        <Route path="/voter" element={
+          <ProtectedVoterRoute>
+            <VoterDashboard onSwitchPage={onSwitchPage} />
+          </ProtectedVoterRoute>
+        } />
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
 }
 
 function App() {
