@@ -189,6 +189,7 @@ class Admin(Base):
     username = Column(String(50), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
+    is_pin_set = Column(Boolean, default=True)  # For admin password persistence
     failed_attempts = Column(Integer, default=0)
     locked_until = Column(String(50), nullable=True)
     created_at = Column(String(50), default=lambda: datetime.utcnow().isoformat())
@@ -2451,11 +2452,158 @@ def startup_event():
     ensure_columns()
     
     # Create all tables if they don't exist (Turso/SQLite)
+    # For Turso, we need to use raw SQL since libsql_client doesn't support SQLAlchemy's create_all
     try:
+        from libsql_client import create_client_sync
+        
+        TURSO_URL = os.getenv("TURSO_URL")
+        TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
+        
+        if TURSO_URL:
+            # Convert libsql:// to https:// for HTTP-based client
+            if TURSO_URL.startswith("libsql://"):
+                db_url = TURSO_URL.replace("libsql://", "https://", 1)
+            else:
+                db_url = TURSO_URL
+            
+            client = create_client_sync(db_url, auth_token=TURSO_AUTH_TOKEN)
+            
+            # Create tables using raw SQL for Turso
+            tables_sql = [
+                """CREATE TABLE IF NOT EXISTS voters (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    resident_id TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    id_type TEXT,
+                    id_number TEXT,
+                    id_photo_front TEXT,
+                    id_photo_back TEXT,
+                    verification_status TEXT DEFAULT 'pending',
+                    rejection_reason TEXT,
+                    admin_notes TEXT,
+                    verified_by TEXT,
+                    is_verified BOOLEAN DEFAULT 0,
+                    is_approved BOOLEAN DEFAULT 0,
+                    is_active BOOLEAN DEFAULT 0,
+                    consent_given BOOLEAN DEFAULT 0,
+                    is_flagged BOOLEAN DEFAULT 0,
+                    pin_hash TEXT,
+                    pin_set_at TEXT,
+                    pin_setup_token TEXT,
+                    pin_setup_expires TEXT,
+                    created_at TEXT,
+                    approved_at TEXT,
+                    gas_balance FLOAT DEFAULT 1.0
+                )""",
+                """CREATE TABLE IF NOT EXISTS election_officials (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    official_id TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    pin_hash TEXT,
+                    role TEXT DEFAULT 'officer',
+                    is_active BOOLEAN DEFAULT 0,
+                    is_pin_set BOOLEAN DEFAULT 0,
+                    failed_attempts INTEGER DEFAULT 0,
+                    locked_until TEXT,
+                    created_at TEXT,
+                    last_login TEXT
+                )""",
+                """CREATE TABLE IF NOT EXISTS admins (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    is_active BOOLEAN DEFAULT 1,
+                    failed_attempts INTEGER DEFAULT 0,
+                    locked_until TEXT,
+                    created_at TEXT,
+                    last_login TEXT
+                )""",
+                """CREATE TABLE IF NOT EXISTS positions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    max_votes INTEGER DEFAULT 1
+                )""",
+                """CREATE TABLE IF NOT EXISTS candidates (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    candidate_id TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    party TEXT,
+                    description TEXT,
+                    position_id INTEGER
+                )""",
+                """CREATE TABLE IF NOT EXISTS votes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    voter_resident_id TEXT NOT NULL,
+                    candidate_id TEXT NOT NULL,
+                    position_id INTEGER,
+                    timestamp TEXT,
+                    transaction_hash TEXT,
+                    is_verified BOOLEAN DEFAULT 0
+                )""",
+                """CREATE TABLE IF NOT EXISTS blockchain_ledger (
+                    id INTEGER PRIMARY KEY,
+                    chain_data TEXT,
+                    pending_transactions TEXT,
+                    participants TEXT,
+                    hmac TEXT,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )""",
+                """CREATE TABLE IF NOT EXISTS review_locks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    voter_resident_id TEXT UNIQUE NOT NULL,
+                    official_id TEXT NOT NULL,
+                    locked_at TEXT
+                )""",
+                """CREATE TABLE IF NOT EXISTS vote_tokens (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    token TEXT UNIQUE NOT NULL,
+                    voter_resident_id TEXT NOT NULL,
+                    candidate_id TEXT NOT NULL,
+                    position_id INTEGER,
+                    created_at TEXT,
+                    expires_at TEXT,
+                    used INTEGER DEFAULT 0
+                )""",
+                """CREATE TABLE IF NOT EXISTS voter_activity (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    voter_resident_id TEXT NOT NULL,
+                    activity_type TEXT NOT NULL,
+                    description TEXT,
+                    timestamp TEXT,
+                    metadata TEXT
+                )""",
+                """CREATE TABLE IF NOT EXISTS activity_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action TEXT NOT NULL,
+                    actor TEXT,
+                    details TEXT,
+                    timestamp TEXT
+                )"""
+            ]
+            
+            for sql in tables_sql:
+                try:
+                    client.execute(sql)
+                except Exception as e:
+                    print(f"Warning: Error creating table: {e}")
+            
+            client.close()
+            print("Turso database tables created/verified")
+        else:
+            # SQLite fallback
+            Base.metadata.create_all(bind=engine)
+            print("SQLite database tables created/verified")
+            
+    except ImportError:
+        # libsql_client not available, use SQLite
         Base.metadata.create_all(bind=engine)
-        print("Database tables created/verified")
+        print("SQLite database tables created/verified (libsql_client not installed)")
     except Exception as e:
-        print(f"Warning: Could not create tables via SQLAlchemy: {e}")
+        print(f"Warning: Could not create tables: {e}")
+        try:
+            Base.metadata.create_all(bind=engine)
+        except:
+            pass
     
     # Initialize blockchain (now stored in DB instead of ledger.json)
     # No need to load_from_disk() anymore
