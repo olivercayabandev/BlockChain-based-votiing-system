@@ -11,15 +11,20 @@ export function useBlockchain() {
     setError(null);
 
     try {
-      const res = await fetch(`/api/blockchain`);
+      const res = await fetch(`/api/blockchain`, { timeout: 10000 });
       if (!res.ok) {
-        throw new Error('Failed to fetch blockchain data');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || `Server error: ${res.status}`);
       }
       const data = await res.json();
       setChainData(data.chain || []);
       setPendingTxns(data.pending_transactions || []);
     } catch (err) {
-      setError(err.message || 'Failed to load blockchain');
+      if (err.name === 'AbortError' || err.message.includes('timeout')) {
+        setError('Request timed out. Please try again.');
+      } else {
+        setError(err.message || 'Failed to load blockchain');
+      }
     } finally {
       setLoading(false);
     }

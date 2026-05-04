@@ -97,11 +97,11 @@ export function ElectionSetup({ onUpdate }) {
 
       <div style={styles.card}>
         <h3 style={{ marginBottom: '16px' }}>Add Position</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px auto', gap: '16px', alignItems: 'end', marginBottom: '12px' }}>
           <div>
             <label style={styles.label}>Position Title</label>
             <input
-              style={styles.input}
+              style={{ ...styles.input, marginBottom: '0' }}
               placeholder="e.g., President"
               value={newPosition.title}
               onChange={(e) => setNewPosition(prev => ({ ...prev, title: e.target.value }))}
@@ -112,7 +112,7 @@ export function ElectionSetup({ onUpdate }) {
             <label style={styles.label}>Max Votes</label>
             <input
               type="number"
-              style={styles.input}
+              style={{ ...styles.input, marginBottom: '0' }}
               value={newPosition.max_votes}
               onChange={(e) => setNewPosition(prev => ({ ...prev, max_votes: parseInt(e.target.value, 10) || 1 }))}
               min="1"
@@ -120,7 +120,7 @@ export function ElectionSetup({ onUpdate }) {
             />
           </div>
           <button
-            style={{ ...styles.button, ...styles.buttonPrimary }}
+            style={{ ...styles.button, ...styles.buttonPrimary, height: '42px' }}
             onClick={handleAddPosition}
             disabled={loading || !newPosition.title.trim()}
             aria-busy={loading}
@@ -165,11 +165,11 @@ export function ElectionSetup({ onUpdate }) {
 
       <div style={styles.card}>
         <h3 style={{ marginBottom: '16px' }}>Add Candidate</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
           <div>
             <label style={styles.label}>Candidate ID</label>
             <input
-              style={styles.input}
+              style={{ ...styles.input, marginBottom: '0' }}
               placeholder="e.g., CAND001"
               value={newCandidate.candidate_id}
               onChange={(e) => setNewCandidate(prev => ({ ...prev, candidate_id: e.target.value }))}
@@ -179,17 +179,19 @@ export function ElectionSetup({ onUpdate }) {
           <div>
             <label style={styles.label}>Name</label>
             <input
-              style={styles.input}
+              style={{ ...styles.input, marginBottom: '0' }}
               placeholder="Candidate Name"
               value={newCandidate.name}
               onChange={(e) => setNewCandidate(prev => ({ ...prev, name: e.target.value }))}
               aria-label="Candidate Name"
             />
           </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '16px', alignItems: 'end' }}>
           <div>
             <label style={styles.label}>Party</label>
             <input
-              style={styles.input}
+              style={{ ...styles.input, marginBottom: '0' }}
               placeholder="Party/Organization"
               value={newCandidate.party}
               onChange={(e) => setNewCandidate(prev => ({ ...prev, party: e.target.value }))}
@@ -199,12 +201,12 @@ export function ElectionSetup({ onUpdate }) {
           <div>
             <label style={styles.label}>Position</label>
             {localPositions.length === 0 ? (
-              <div style={{ ...styles.input, backgroundColor: '#f3f4f6', color: '#6b7280' }}>
+              <div style={{ ...styles.input, backgroundColor: '#f3f4f6', color: '#6b7280', marginBottom: '0' }}>
                 No positions available - create one first
               </div>
             ) : (
               <select
-                style={styles.select}
+                style={{ ...styles.select, marginBottom: '0' }}
                 value={newCandidate.position_id}
                 onChange={(e) => setNewCandidate(prev => ({ ...prev, position_id: e.target.value }))}
                 aria-label="Select Position"
@@ -216,30 +218,35 @@ export function ElectionSetup({ onUpdate }) {
               </select>
             )}
           </div>
-          <div style={{ gridColumn: 'span 2' }}>
-            <label style={styles.label}>Description</label>
-            <input
-              style={styles.input}
-              placeholder="Brief description"
-              value={newCandidate.description}
-              onChange={(e) => setNewCandidate(prev => ({ ...prev, description: e.target.value }))}
-              aria-label="Description"
-            />
-          </div>
+          <button
+            style={{ ...styles.button, ...styles.buttonPrimary, height: '42px' }}
+            onClick={handleAddCandidate}
+            disabled={loading || !canAddCandidate || localPositions.length === 0}
+            aria-busy={loading}
+          >
+            Add
+          </button>
         </div>
-        <button
-          style={{
-            ...styles.button,
-            ...styles.buttonPrimary,
-            marginTop: '12px',
-            opacity: canAddCandidate && localPositions.length > 0 ? 1 : 0.5,
-          }}
-          onClick={handleAddCandidate}
-          disabled={loading || !canAddCandidate || localPositions.length === 0}
-          aria-busy={loading}
-        >
-          {localPositions.length === 0 ? 'Add positions first' : 'Add Candidate'}
-        </button>
+        <div style={{ marginTop: '12px' }}>
+          <label style={styles.label}>Description</label>
+          <input
+            style={{ ...styles.input, marginBottom: '0' }}
+            placeholder="Brief description"
+            value={newCandidate.description}
+            onChange={(e) => setNewCandidate(prev => ({ ...prev, description: e.target.value }))}
+            aria-label="Description"
+          />
+        </div>
+        {!canAddCandidate && localPositions.length > 0 && (
+          <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+            Fill all required fields (Candidate ID, Name, Position)
+          </p>
+        )}
+        {localPositions.length === 0 && (
+          <p style={{ fontSize: '12px', color: '#ef4444', marginTop: '4px' }}>
+            Add a position first before adding candidates
+          </p>
+        )}
         {!canAddCandidate && localPositions.length > 0 && (
           <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
             Fill all required fields (Candidate ID, Name, Position)
