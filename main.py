@@ -2126,7 +2126,12 @@ async def import_voters_batch(request: Request, token: str, db: SessionLocal = D
         raise HTTPException(status_code=401, detail="Invalid token")
     
     try:
-        request_data = await request.json()
+        body = await request.json()
+        # Handle both {"voters": [...]} and direct array [...]
+        if isinstance(body, dict):
+            request_data = body.get("voters", [])
+        else:
+            request_data = body if isinstance(body, list) else []
     except:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
     
