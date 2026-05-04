@@ -75,27 +75,34 @@ purge_expired_tokens()
 # Turso Database Configuration
 DATABASE_URL = os.getenv("TURSO_URL")
 TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
+USE_TURSO = False
+TURSO_CLIENT = None
 
 if not DATABASE_URL:
     print("WARNING: TURSO_URL not set, falling back to SQLite")
     DATABASE_URL = "sqlite:///./votechain.db"
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
-    # For Turso, use libsql-client directly (not through SQLAlchemy)
+    # For Turso, use libsql-client
     try:
         from libsql_client import create_client_sync
         
+        # Convert libsql:// to https:// for HTTP-based client
+        if DATABASE_URL.startswith("libsql://"):
+            TURSO_DB_URL = DATABASE_URL.replace("libsql://", "https://", 1)
+        else:
+            TURSO_DB_URL = DATABASE_URL
+        
         # Test connection to Turso
-        test_url = DATABASE_URL.replace("libsql://", "https://", 1) if DATABASE_URL.startswith("libsql://") else DATABASE_URL
-        test_client = create_client_sync(test_url, auth_token=TURSO_AUTH_TOKEN if TURSO_AUTH_TOKEN else None)
+        test_client = create_client_sync(TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN if TURSO_AUTH_TOKEN else None)
         test_result = test_client.execute("SELECT 1")
         test_client.close()
         
-        print("Connected to Turso! URL: " + str(test_url[:50]) + "...")
+        print("Connected to Turso! URL: " + str(TURSO_DB_URL[:50]) + "...")
+        USE_TURSO = True
+        TURSO_CLIENT = create_client_sync  # Store the class for later use
         
-        # Store Turso connection info for later use
-        os.environ["TURSO_CONNECTED"] = "true"
-        # Use SQLite as fallback for SQLAlchemy but we'll use libsql_client directly for queries
+        # Use SQLite as fallback for SQLAlchemy ORM (we'll override session queries)
         DATABASE_URL = "sqlite:///./votechain.db"
         engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
         
@@ -112,6 +119,40 @@ else:
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+# Turso query helper - use libsql-client for queries when connected
+def turso_query(sql, params=None):
+    """Execute query using Turso if connected, otherwise return None"""
+    if USE_TURSO and TURSO_CLIENT:
+        try:
+            client = TURSO_CLIENT(TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
+            if params:
+                result = client.execute(sql, params)
+            else:
+                result = client.execute(sql)
+            client.close()
+            return result
+        except Exception as e:
+            print("Turso query error: " + str(e))
+            return None
+    return None
+
+def turso_execute(sql, params=None):
+    """Execute write operation using Turso if connected"""
+    if USE_TURSO and TURSO_CLIENT:
+        try:
+            client = TURSO_CLIENT(TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
+            if params:
+                result = client.execute(sql, params)
+            else:
+                result = client.execute(sql)
+            client.close()
+            return result
+        except Exception as e:
+            print("Turso execute error: " + str(e))
+            raise
+    else:
+        raise Exception("Turso not connected")
 
 app = FastAPI(title="Blockchain Voting System", version="1.0.0",
               docs_url="/docs",
