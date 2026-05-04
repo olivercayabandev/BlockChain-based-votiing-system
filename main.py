@@ -2313,8 +2313,6 @@ def health_check():
         "turso_status": turso_status,
         "turso_url_set": bool(os.getenv("TURSO_URL"))
     }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/admin/reset-election")
 def reset_election(token: str, db: SessionLocal = Depends(get_db)):
