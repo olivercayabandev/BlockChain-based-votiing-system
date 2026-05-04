@@ -81,24 +81,32 @@ if not DATABASE_URL:
     DATABASE_URL = "sqlite:///./votechain.db"
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
-    # For Turso, we need to use libsql-client with SQLAlchemy
+    # For Turso, use libsql-client directly (not through SQLAlchemy)
     try:
-        from sqlalchemy import event
-        from libsql_client import connect
+        from libsql_client import create_client_sync
         
-        def _connect(dbapi_connection, connection_record):
-            dbapi_connection.connection = connect(
-                DATABASE_URL,
-                auth_token=TURSO_AUTH_TOKEN if TURSO_AUTH_TOKEN else None
-            )
+        # Test connection to Turso
+        test_url = DATABASE_URL.replace("libsql://", "https://", 1) if DATABASE_URL.startswith("libsql://") else DATABASE_URL
+        test_client = create_client_sync(test_url, auth_token=TURSO_AUTH_TOKEN if TURSO_AUTH_TOKEN else None)
+        test_result = test_client.execute("SELECT 1")
+        test_client.close()
         
-        engine = create_engine(
-            "sqlite://",  # Placeholder, actual connection handled by event
-            connect_args={"check_same_thread": False}
-        )
-        event.listen(engine, "connect", _connect)
-    except ImportError:
-        print("WARNING: libsql-client not installed, falling back to SQLite")
+        print("Connected to Turso! URL: " + str(test_url[:50]) + "...")
+        
+        # Store Turso connection info for later use
+        os.environ["TURSO_CONNECTED"] = "true"
+        # Use SQLite as fallback for SQLAlchemy but we'll use libsql_client directly for queries
+        DATABASE_URL = "sqlite:///./votechain.db"
+        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+        
+    except ImportError as e:
+        print("WARNING: libsql-client not installed: " + str(e))
+        print("Falling back to SQLite")
+        DATABASE_URL = "sqlite:///./votechain.db"
+        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    except Exception as e:
+        print("WARNING: Turso connection failed: " + str(e))
+        print("Falling back to SQLite")
         DATABASE_URL = "sqlite:///./votechain.db"
         engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
