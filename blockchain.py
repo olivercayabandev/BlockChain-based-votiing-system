@@ -336,20 +336,19 @@ class Blockchain:
                     row = rows[0]
                     
                     try:
-                        # FIX: Handle libsql_client.result.Row objects properly
+                        # FIX: libsql_client.result.Row uses INTEGER indices only (like tuple)
+                        # Row[0] = chain_data, Row[1] = pending_transactions, 
+                        # Row[2] = participants, Row[3] = hmac
                         chain_json = None
                         pending_json = None
                         participants_json = None
                         stored_hmac = None
                         
-                        # Convert row to proper format
-                        # libsql-client returns Row objects that behave like tuples
                         if row is None:
                             raise ValueError("Row is None")
                         
-                        # Handle string case (error)
+                        # Handle string case (shouldn't happen, but just in case)
                         if isinstance(row, str):
-                            # Maybe it's a JSON string?
                             try:
                                 data = json.loads(row)
                                 if isinstance(data, dict):
@@ -357,46 +356,38 @@ class Blockchain:
                                     pending_json = data.get('pending_transactions')
                                     participants_json = data.get('participants')
                                     stored_hmac = data.get('hmac')
-                                else:
-                                    raise ValueError("Row is a string but not JSON")
                             except json.JSONDecodeError:
                                 raise ValueError(f"Row is a string: {row[:50]}")
                         
-                        # Handle tuple/list (most common for libsql-client)
-                        elif isinstance(row, (tuple, list)):
-                            if len(row) >= 4:
-                                chain_json = row[0]
-                                pending_json = row[1]
-                                participants_json = row[2]
-                                stored_hmac = row[3]
-                            elif len(row) >= 1:
-                                chain_json = row[0]
+                        # Handle libsql_client.result.Row (MOST COMMON) - uses integer indices
+                        elif hasattr(row, '__getitem__') and hasattr(row, '__len__'):
+                            try:
+                                # libsql Row works EXACTLY like a tuple - use integer indices
+                                row_len = len(row)
+                                if row_len >= 4:
+                                    chain_json = row[0]  # chain_data
+                                    pending_json = row[1]  # pending_transactions
+                                    participants_json = row[2]  # participants
+                                    stored_hmac = row[3]  # hmac
+                                elif row_len >= 1:
+                                    chain_json = row[0]  # at least chain_data
+                            except (TypeError, IndexError) as e:
+                                raise ValueError(f"Cannot parse Row with integer indices: {e}")
                         
-                        # Handle dict format
+                        # Handle dict format (fallback)
                         elif isinstance(row, dict):
                             chain_json = row.get('chain_data')
                             pending_json = row.get('pending_transactions')
                             participants_json = row.get('participants')
                             stored_hmac = row.get('hmac')
                         
-                        # Handle libsql Row object (has __getitem__ and __len__)
-                        elif hasattr(row, '__getitem__') and hasattr(row, '__len__'):
-                            try:
-                                # Try as tuple-like (by index)
-                                if len(row) >= 4:
-                                    chain_json = row[0]
-                                    pending_json = row[1]
-                                    participants_json = row[2]
-                                    stored_hmac = row[3]
-                            except (TypeError, IndexError):
-                                # Try as dict-like (by key)
-                                try:
-                                    chain_json = row['chain_data']
-                                    pending_json = row['pending_transactions']
-                                    participants_json = row['participants']
-                                    stored_hmac = row['hmac']
-                                except (KeyError, TypeError):
-                                    raise ValueError(f"Cannot parse Row object: {type(row)}")
+                        # Handle tuple/list (fallback)
+                        elif isinstance(row, (tuple, list)):
+                            if len(row) >= 4:
+                                chain_json = row[0]
+                                pending_json = row[1]
+                                participants_json = row[2]
+                                stored_hmac = row[3]
                         
                         # Verify HMAC
                         if stored_hmac and chain_json:
