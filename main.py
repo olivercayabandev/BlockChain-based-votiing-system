@@ -2281,19 +2281,38 @@ def get_stats(db: SessionLocal = Depends(get_db)):
 
 
 @app.get("/api/health")
-def health(db: SessionLocal = Depends(get_db)):
-    """Basic health check for ledger and token store"""
+def health_check():
+    """Health check endpoint for monitoring"""
+    ledger_valid = blockchain.is_chain_valid()
+    
+    # Check if Turso is connected
+    turso_status = "unknown"
     try:
-        ledger_valid = blockchain.is_chain_valid()
-        blocks = blockchain.get_block_count()
-        pending = blockchain.get_pending_count()
-        tokens_present = Path(TOKEN_FILE).exists()
-        return {
-            "ledger_valid": ledger_valid,
-            "blocks": blocks,
-            "pending_transactions": pending,
-            "tokens_file_present": tokens_present,
-        }
+        from libsql_client import create_client_sync
+        TURSO_URL = os.getenv("TURSO_URL")
+        TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
+        
+        if TURSO_URL:
+            test_url = TURSO_URL.replace("libsql://", "https://", 1) if TURSO_URL.startswith("libsql://") else TURSO_URL
+            client = create_client_sync(test_url, auth_token=TURSO_AUTH_TOKEN)
+            result = client.execute("SELECT 1")
+            client.close()
+            turso_status = "connected"
+        else:
+            turso_status = "not_configured"
+    except ImportError:
+        turso_status = "libsql_client_not_installed"
+    except Exception as e:
+        turso_status = f"error: {str(e)[:50]}"
+    
+    return {
+        "ledger_valid": ledger_valid,
+        "blocks": len(blockchain.chain),
+        "pending_transactions": len(blockchain.pending_transactions),
+        "tokens_file_present": Path(TOKEN_FILE).exists(),
+        "turso_status": turso_status,
+        "turso_url_set": bool(os.getenv("TURSO_URL"))
+    }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
