@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: votechain-backend-ueuj
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13
+      - key: TURSO_URL
+        value: libsql://votechain-db-olivercayabandev.aws-ap-northeast-1.turso.io
+      - key: TURSO_AUTH_TOKEN
+        value: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3Nzc4NTgwMzQsImlkIjoiMDE5ZGRjYzAtZDcwMS03MDIxLTg3OWYtOWQ0NTkzOWMzMTNhIiwicmlkIjoiYmJhMjkzMmEtNjljOS00ZjU0LWE2ZGUtNDM3YTZiZTdhMThhIn0.REuD2zSZIPM_IUWSWCQFbl-hJiEeA-RwbNOq61Gr0_tCOj79B8zHU_jHzr3JU5dDanA-mfpsPOl1rvGFxQ9qDA
