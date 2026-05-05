@@ -101,9 +101,8 @@ if DATABASE_URL:
         USE_TURSO = True
         TURSO_CLIENT = create_client_sync
         
-        # Create a minimal engine for SQLAlchemy (we won't use it for queries)
-        engine = create_engine("sqlite:///./votechain.db", connect_args={"check_same_thread": False})
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        # NOTE: We do NOT create a SQLAlchemy engine - using libsql_client only
+        # The startup event will create all tables via libsql_client
         
     except Exception as e:
         print("ERROR: Turso connection failed: " + str(e))

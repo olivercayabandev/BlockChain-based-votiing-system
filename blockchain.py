@@ -205,7 +205,11 @@ class Blockchain:
                 pending_str = json.dumps(self.pending_transactions)
                 participants_str = json.dumps(self.participants)
                 hmac_val = calculate_file_hmac(json_str)
+                
+                # Create table
                 client.execute('CREATE TABLE IF NOT EXISTS blockchain_ledger (id INTEGER PRIMARY KEY, chain_data TEXT, pending_transactions TEXT, participants TEXT, hmac TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
+                
+                # Insert with parameters
                 client.execute(
                     'INSERT OR REPLACE INTO blockchain_ledger (id, chain_data, pending_transactions, participants, hmac, updated_at) VALUES (1, ?, ?, ?, ?, datetime("now"))',
                     [json_str, pending_str, participants_str, hmac_val]
