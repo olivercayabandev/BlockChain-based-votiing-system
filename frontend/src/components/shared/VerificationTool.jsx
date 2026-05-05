@@ -1,71 +1,14 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { useBlockchain } from '../../hooks/useBlockchain';
-import { useToast } from '../../hooks/useToast';
 
 const styles = {
   container: { 
-    maxWidth: '1200px', 
+    maxWidth: '700px', 
     margin: '0 auto', 
     padding: '20px', 
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
     backgroundColor: '#f8fafc',
     minHeight: '100vh'
-  },
-  loginBox: { 
-    maxWidth: '480px', 
-    margin: '40px auto', 
-    padding: '0'
-  },
-  card: { 
-    backgroundColor: '#fff', 
-    borderRadius: '16px', 
-    border: '1px solid #e2e8f0', 
-    padding: '32px', 
-    marginBottom: '16px', 
-    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)' 
-  },
-  input: { 
-    width: '100%', 
-    padding: '14px 16px', 
-    borderRadius: '10px', 
-    border: '2px solid #e2e8f0', 
-    fontSize: '14px', 
-    marginBottom: '16px', 
-    outline: 'none',
-    transition: 'border-color 0.2s ease',
-    color: '#111827'
-  },
-  button: { 
-    padding: '14px 24px', 
-    borderRadius: '10px', 
-    border: 'none', 
-    fontSize: '15px', 
-    fontWeight: '600', 
-    cursor: 'pointer',
-    transition: 'all 0.2s ease'
-  },
-  buttonPrimary: { 
-    backgroundColor: '#0d9488', 
-    color: '#fff',
-    width: '100%',
-    ':hover': {
-      backgroundColor: '#0f766e'
-    },
-    ':disabled': {
-      backgroundColor: '#94a3b8',
-      cursor: 'not-allowed'
-    }
-  },
-  buttonSecondary: { 
-    backgroundColor: 'transparent', 
-    color: '#64748b', 
-    width: '100%', 
-    marginTop: '16px',
-    border: '1px solid #e2e8f0',
-    ':hover': {
-      backgroundColor: '#f8fafc'
-    }
   },
   pageTitle: { 
     textAlign: 'center', 
@@ -75,21 +18,96 @@ const styles = {
     fontSize: '28px', 
     fontWeight: '700', 
     color: '#0f172a', 
+    marginBottom: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '12px'
+  },
+  subtitle: { 
+    fontSize: '14px', 
+    color: '#64748b' 
+  },
+  card: { 
+    backgroundColor: '#fff', 
+    borderRadius: '16px', 
+    padding: '32px', 
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    border: '1px solid #e2e8f0'
+  },
+  inputGroup: { 
+    marginBottom: '20px' 
+  },
+  label: { 
+    display: 'block', 
+    fontSize: '14px', 
+    fontWeight: '600', 
+    color: '#374151', 
     marginBottom: '8px' 
   },
-  textMuted: { 
-    color: '#64748b', 
-    fontSize: '15px' 
+  input: { 
+    width: '100%', 
+    padding: '12px 16px', 
+    fontSize: '14px', 
+    border: '2px solid #e5e7eb', 
+    borderRadius: '8px', 
+    outline: 'none', 
+    transition: 'border-color 0.2s ease',
+    fontFamily: 'monospace',
+    color: '#111827'
   },
-  hashIcon: {
-    fontSize: '48px',
-    marginBottom: '16px',
-    display: 'block'
+  button: { 
+    width: '100%', 
+    padding: '14px', 
+    fontSize: '16px', 
+    fontWeight: '600', 
+    border: 'none', 
+    borderRadius: '8px', 
+    cursor: 'pointer', 
+    transition: 'all 0.2s ease', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: '8px' 
+  },
+  buttonPrimary: { 
+    backgroundColor: '#0d9488', 
+    color: '#fff',
+    ':hover': { backgroundColor: '#0f766e' }
+  },
+  resultCard: { 
+    marginTop: '24px', 
+    padding: '20px', 
+    borderRadius: '8px', 
+    border: '1px solid' 
+  },
+  resultTitle: { 
+    fontSize: '16px', 
+    fontWeight: '600', 
+    marginBottom: '12px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '8px' 
+  },
+  resultRow: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    padding: '8px 0', 
+    borderBottom: '1px solid #f1f5f9',
+    fontSize: '14px'
+  },
+  resultLabel: { 
+    color: '#64748b', 
+    fontWeight: '500' 
+  },
+  resultValue: { 
+    color: '#0f172a', 
+    fontWeight: '600' 
   },
   alert: { 
-    padding: '16px', 
-    borderRadius: '10px', 
-    marginBottom: '16px',
+    padding: '12px 16px', 
+    borderRadius: '8px', 
+    marginBottom: '16px', 
     border: '1px solid',
     display: 'flex',
     alignItems: 'center',
@@ -110,101 +128,174 @@ const styles = {
     color: '#92400e', 
     borderColor: '#fde68a' 
   },
-  label: { 
-    display: 'block', 
-    fontSize: '14px', 
-    fontWeight: '500', 
-    color: '#374151', 
-    marginBottom: '6px' 
-  },
-  flexCenter: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center'
+  icon: {
+    fontSize: '32px',
+    color: '#0d9488'
   }
 };
 
 export function VerificationTool({ onSwitchPage }) {
   const [searchHash, setSearchHash] = useState('');
-  const { loading, verifyTransaction } = useBlockchain();
-  const { toasts, success, error: showError } = useToast();
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
-  const handleSearch = useCallback(async () => {
+  const showToast = (message, type = 'error') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 5000);
+  };
+
+  const handleSearch = async () => {
     if (!searchHash.trim()) {
-      showError('Please enter a transaction hash');
+      showToast('Please enter a transaction hash', 'error');
       return;
     }
 
-    try {
-      const result = await verifyTransaction(searchHash.trim());
-      if (result.confirmed) {
-        success('Vote confirmed! Transaction is in the blockchain.');
-      } else {
-        showError('Transaction found but not yet confirmed.');
-      }
-    } catch (err) {
-      showError(err.message || 'Transaction not found');
-    }
-  }, [searchHash, verifyTransaction, success, showError]);
+    setLoading(true);
+    setResult(null);
 
-  const handleKeyPress = useCallback((e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
+    try {
+      const response = await fetch(`/api/verify/${searchHash.trim()}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.verified) {
+        setResult(data);
+        showToast('Transaction verified successfully!', 'success');
+      } else {
+        showToast(data.message || 'Transaction not found', 'error');
+      }
+    } catch (error) {
+      showToast('Verification failed. Please try again.', 'error');
+    } finally {
+      setLoading(false);
     }
-  }, [handleSearch]);
+  };
 
   return (
     <div style={styles.container}>
-      <div style={styles.loginBox}>
-        <div style={styles.pageTitle}>
-          <div style={{...styles.flexCenter, marginBottom: '16px'}}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#0d9488"/>
-            </svg>
-          </div>
-          <h1 style={styles.title}>Vote Verification</h1>
-          <p style={styles.textMuted}>Enter transaction hash to verify</p>
-        </div>
-        <div style={styles.card}>
-          <label style={styles.label}>Transaction Hash</label>
+      <div style={styles.pageTitle}>
+        <h1 style={styles.title}>
+          <span style={styles.icon}>🔍</span>
+          Verify Transaction
+        </h1>
+        <p style={styles.subtitle}>Enter a transaction hash to verify its authenticity on the blockchain</p>
+      </div>
+
+      <div style={styles.card}>
+        <div style={styles.inputGroup}>
+          <label htmlFor="searchHash" style={styles.label}>
+            Transaction Hash
+          </label>
           <input
+            id="searchHash"
+            type="text"
             style={styles.input}
-            placeholder="Enter transaction hash"
+            placeholder="Enter transaction hash (e.g., a1b2c3d4...)"
             value={searchHash}
             onChange={(e) => setSearchHash(e.target.value)}
-            onKeyPress={handleKeyPress}
-            aria-label="Transaction Hash"
-            onFocus={(e) => e.target.style.borderColor = '#0d9488'}
-            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
           />
-          <button
-            style={{ ...styles.button, ...styles.buttonPrimary }}
-            onClick={handleSearch}
-            disabled={loading}
-            aria-busy={loading}
-          >
-            {loading ? 'Verifying...' : 'Verify Transaction'}
-          </button>
-
-          {toasts.map(toast => (
-            <div
-              key={toast.id}
-              style={{
-                ...styles.alert,
-                ...(toast.type === 'success' ? styles.alertGreen : styles.alertRed)
-              }}
-              role="status"
-            >
-              <span style={{ fontSize: '20px' }}>
-                {toast.type === 'success' ? '✓' : '⚠'}
-              </span>
-              <span>{toast.message}</span>
-          </div>
         </div>
-      </div>
-    );
-  }
 
-  VerificationTool.propTypes = {
-    onSwitchPage: PropTypes.func.isRequired,
-  };
+        <button
+          style={{ ...styles.button, ...styles.buttonPrimary }}
+          onClick={handleSearch}
+          disabled={loading}
+          aria-busy={loading}
+        >
+          {loading ? 'Verifying...' : 'Verify Transaction'}
+        </button>
+
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            style={{
+              ...styles.alert,
+              ...(toast.type === 'success' ? styles.alertGreen : styles.alertRed)
+            }}
+            role="status"
+          >
+            <span style={{ fontSize: '20px' }}>
+              {toast.type === 'success' ? '✓' : '⚠'}
+            </span>
+            <span>{toast.message}</span>
+          </div>
+        ))}
+      </div>
+
+      {result && (
+        <div style={{ ...styles.resultCard, borderColor: '#bbf7d0', backgroundColor: '#f0fdf4' }}>
+          <h3 style={{ ...styles.resultTitle, color: '#166534' }}>
+            <span>✓</span>
+            Transaction Verified
+          </h3>
+          
+          <div style={styles.resultRow}>
+            <span style={styles.resultLabel}>Status</span>
+            <span style={{ ...styles.resultValue, color: '#166534' }}>Confirmed</span>
+          </div>
+          
+          <div style={styles.resultRow}>
+            <span style={styles.resultLabel}>Transaction Hash</span>
+            <span style={{ ...styles.resultValue, fontFamily: 'monospace', fontSize: '12px' }}>
+              {result.transaction_hash}
+            </span>
+          </div>
+          
+          <div style={styles.resultRow}>
+            <span style={styles.resultLabel}>Block Index</span>
+            <span style={styles.resultValue}>#{result.block_index}</span>
+          </div>
+          
+          <div style={styles.resultRow}>
+            <span style={styles.resultLabel}>Block Hash</span>
+            <span style={{ ...styles.resultValue, fontFamily: 'monospace', fontSize: '12px' }}>
+              {result.block_hash}
+            </span>
+          </div>
+          
+          {result.type && (
+            <div style={styles.resultRow}>
+              <span style={styles.resultLabel}>Type</span>
+              <span style={styles.resultValue}>{result.type}</span>
+            </div>
+          )}
+          
+          {result.resident_id && (
+            <div style={styles.resultRow}>
+              <span style={styles.resultLabel}>Voter ID</span>
+              <span style={styles.resultValue}>{result.resident_id}</span>
+            </div>
+          )}
+          
+          {result.candidate_id && (
+            <div style={styles.resultRow}>
+              <span style={styles.resultLabel}>Candidate</span>
+              <span style={styles.resultValue}>{result.candidate_id}</span>
+            </div>
+          )}
+          
+          {result.timestamp && (
+            <div style={styles.resultRow}>
+              <span style={styles.resultLabel}>Timestamp</span>
+              <span style={styles.resultValue}>
+                {new Date(result.timestamp * 1000).toLocaleString()}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+VerificationTool.propTypes = {
+  onSwitchPage: PropTypes.func.isRequired,
+};

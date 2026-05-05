@@ -31,17 +31,6 @@ const styles = {
     fontSize: '14px',
     color: '#64748b'
   },
-  backButton: { 
-    padding: '10px 20px', 
-    borderRadius: '8px', 
-    border: '1px solid #e2e8f0', 
-    backgroundColor: '#fff',
-    color: '#475569',
-    fontSize: '14px', 
-    fontWeight: '500', 
-    cursor: 'pointer',
-    transition: 'all 0.2s ease'
-  },
   genesisCard: { 
     backgroundColor: '#fff', 
     borderRadius: '12px', 
@@ -169,16 +158,6 @@ export function BlockchainVisualizer({ onSwitchPage }) {
           </h1>
           <p style={styles.subtitle}>Immutable voting record</p>
         </div>
-      </div>
-        <button
-          style={styles.backButton}
-          onClick={() => onSwitchPage('home')}
-          aria-label="Go back"
-          onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
-        >
-          Back
-        </button>
       </div>
 
       {error && (
