@@ -397,9 +397,10 @@ class Blockchain:
                                 raise Exception("Ledger integrity check failed")
                         
                         data = json.loads(chain_json)
-                        self.chain = [Block.from_dict(block_data) for block_data in data]
-                        self.pending_transactions = json.loads(pending_json) if pending_json else []
-                        self.participants = json.loads(participants_json) if participants_json else {}
+                        # data is a dict with keys: "chain", "pending_transactions", "participants"
+                        self.chain = [Block.from_dict(block_data) for block_data in data.get("chain", [])]
+                        self.pending_transactions = data.get("pending_transactions", [])
+                        self.participants = data.get("participants", {})
                         logger.info(f"Ledger loaded: {len(self.chain)} blocks, {len(self.participants)} participants")
                         
                     except (ValueError, TypeError, KeyError, json.JSONDecodeError) as e:
