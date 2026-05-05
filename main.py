@@ -30,7 +30,7 @@ except ImportError:
     print("Warning: bcrypt not installed. PIN security reduced.")
 
 # SQLAlchemy ORM Setup
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, Float
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, Float, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 # Token Persistence
@@ -83,7 +83,7 @@ if not DATABASE_URL:
     DATABASE_URL = "sqlite:///./votechain.db"
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
-    # For Turso, use libsql-client
+    # For Turso, use libsql-client for raw queries
     try:
         from libsql_client import create_client_sync
         
@@ -102,9 +102,11 @@ else:
         USE_TURSO = True
         TURSO_CLIENT = create_client_sync  # Store the class for later use
         
-        # Use SQLite as fallback for SQLAlchemy ORM (we'll override session queries)
+        # Also create tables in local SQLite for SQLAlchemy ORM compatibility
         DATABASE_URL = "sqlite:///./votechain.db"
         engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+        Base.metadata.create_all(bind=engine)
+        print("SQLite tables created for SQLAlchemy ORM compatibility")
         
     except ImportError as e:
         print("WARNING: libsql-client not installed: " + str(e))
@@ -2728,8 +2730,12 @@ def startup_event():
     # Seed data AFTER tables are created
     seed_data()
     
-    # Initialize blockchain (now stored in DB instead of ledger.json)
-    # No need to load_from_disk() anymore
+    # Ensure tables exist in SQLite for SQLAlchemy
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("SQLAlchemy tables verified in SQLite")
+    except Exception as e:
+        print(f"Warning: Could not create SQLAlchemy tables: {e}")
     
     # Sync blockchain participants with database
     db = SessionLocal()
