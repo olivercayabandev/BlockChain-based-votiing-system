@@ -11,7 +11,7 @@ export function useBlockchain() {
     setError(null);
 
     try {
-      const res = await fetch(`/api/blockchain`, { timeout: 10000 });
+      const res = await fetch(`/api/blockchain`);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.detail || errorData.message || `Server error: ${res.status}`);
