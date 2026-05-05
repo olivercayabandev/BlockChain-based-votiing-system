@@ -15,7 +15,7 @@ load_dotenv()
 
 def calculate_file_hmac(data: str) -> str:
     secret = os.getenv('HMAC_SECRET', 'blockchain-voting-hmac-secret-2026-change-in-production!')
-    return hmac.new(secret.encode(), data.encode(), hashlib.sha256()).hexdigest()
+    return hmac.new(secret.encode(), data.encode(), hashlib.sha256).hexdigest()
 
 class Block:
     def __init__(self, index: int, timestamp: float, transactions: List[Dict], previous_hash: str, nonce: int = 0, hash: str = ''):
