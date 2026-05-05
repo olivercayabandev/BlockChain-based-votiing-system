@@ -373,6 +373,14 @@ class Blockchain:
                         participants_json = row.get('participants')
                         stored_hmac = row.get('hmac')
                     
+                    # Ensure chain_json is a string (might be already parsed JSON)
+                    if chain_json and isinstance(chain_json, dict):
+                        chain_json = json.dumps(chain_json)
+                    if pending_json and isinstance(pending_json, (dict, list)):
+                        pending_json = json.dumps(pending_json)
+                    if participants_json and isinstance(participants_json, dict):
+                        participants_json = json.dumps(participants_json)
+                    
                     if stored_hmac and chain_json:
                         calculated_hmac = calculate_file_hmac(chain_json)
                         if calculated_hmac != stored_hmac:

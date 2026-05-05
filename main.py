@@ -33,8 +33,10 @@ except ImportError:
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, Float, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Token Persistence
-TOKEN_FILE = "tokens.json"
+# Global engine and SessionLocal
+engine = None
+SessionLocal = None
+Base = declarative_base()
 
 def load_tokens():
     """Load tokens from JSON file if exists"""
@@ -107,9 +109,9 @@ if DATABASE_URL:
         engine = create_engine("sqlite:///./votechain.db", connect_args={"check_same_thread": False})
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         
-        # Create tables in local SQLite for ORM
-        Base.metadata.create_all(bind=engine)
-        print("SQLAlchemy tables created in local SQLite")
+        # Import all models to register them with Base.metadata
+        # (models are defined later in this file, so we'll call create_all after they're defined)
+        print("SQLAlchemy engine created, will create tables after model definitions")
         
     except Exception as e:
         print("ERROR: Turso connection failed: " + str(e))
@@ -2980,6 +2982,16 @@ async def serve_spa(full_path: str):
     
     return JSONResponse(status_code=404, content={"detail": "Frontend not built"})
 
+# Create all SQLAlchemy tables in local SQLite (for ORM models)
+# This must be called after all models are defined
+try:
+    if engine is not None:
+        Base.metadata.create_all(bind=engine)
+        print("SQLAlchemy tables created/verified in votechain.db")
+    else:
+        print("Warning: engine is None, skipping table creation")
+except Exception as e:
+    print(f"Error creating SQLAlchemy tables: {e}")
 
 if __name__ == "__main__":
     import uvicorn
