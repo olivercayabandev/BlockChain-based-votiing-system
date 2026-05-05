@@ -747,17 +747,36 @@ def sync_gas_balances():
         return
     
     try:
-        client = TURSO_CLIENT(TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
-        result = client.execute('SELECT resident_id, gas_balance FROM voters WHERE gas_balance IS NOT NULL')
+        # Use HTTP API to query Turso
+        TURSO_URL = os.getenv('TURSO_URL', '').replace('libsql://', 'https://', 1)
+        TURSO_AUTH_TOKEN = os.getenv('TURSO_AUTH_TOKEN', '')
         
-        # Parse result
-        rows = []
-        if hasattr(result, 'rows'):
-            rows = result.rows
-        elif isinstance(result, list):
-            rows = result
-        elif isinstance(result, dict):
-            rows = result.get('rows', [])
+        url = f"{TURSO_URL}/v2/pipeline"
+        headers = {'Authorization': f"Bearer {TURSO_AUTH_TOKEN}", 'Content-Type': 'application/json'}
+        
+        payload = {"requests": [
+            {"type": "execute", "stmt": {"sql": "SELECT resident_id, gas_balance FROM voters WHERE gas_balance IS NOT NULL"}},
+            {"type": "close"}
+        ]}
+        
+        r = requests.post(url, json=payload, headers=headers, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        
+        # Parse response
+        results = data.get('results', [])
+        if not results:
+            print("No results from Turso gas balance query")
+            return
+        
+        first_result = results[0]
+        if first_result.get('type') == 'error':
+            print(f"Turso error: {first_result.get('error')}")
+            return
+        
+        response_data = first_result.get('response', {})
+        result = response_data.get('result', {})
+        rows = result.get('rows', [])
         
         for row in rows:
             if isinstance(row, (tuple, list)) and len(row) >= 2:
@@ -773,7 +792,6 @@ def sync_gas_balances():
         
         print(f"Synced {len(blockchain.participants)} voter gas balances to blockchain")
         blockchain.save_to_db()
-        client.close()
     except Exception as e:
         print(f"Gas sync error: {e}")
 
@@ -2112,8 +2130,8 @@ def vote(request: VoteRequest, db: SessionLocal = Depends(get_db)):
             vote_record.block_index = new_block.index
             db.commit()
         
-        # Save blockchain to disk
-        blockchain._save_fallback()
+        # Save blockchain to Turso
+        blockchain.save_to_db()
         logger.info(f"Block {new_block.index} mined and saved")
     
     return {
