@@ -188,7 +188,8 @@ class Blockchain:
                         'transaction_hash': tx_hash,
                         'block_index': block.index,
                         'block_hash': block.hash,
-                        'confirmed': True
+                        'confirmed': True,
+                        'hash': tx_hash
                     }
         for tx in self.pending_transactions:
             tx_hash = self._generate_transaction_hash(tx)
@@ -197,7 +198,8 @@ class Blockchain:
                     **tx,
                     'transaction_hash': tx_hash,
                     'confirmed': False,
-                    'mempool': True
+                    'mempool': True,
+                    'hash': tx_hash
                 }
         return None
     

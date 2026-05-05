@@ -2474,7 +2474,13 @@ def get_blockchain():
 def verify_transaction(tx_hash: str):
     result = blockchain.get_transaction_by_hash(tx_hash)
     if result:
-        return result
+        # Return transaction with verification status
+        return {
+            "found": True,
+            "verified": True,
+            "transaction": result,
+            "message": "Transaction verified successfully"
+        }
     return {"found": False, "message": "Transaction not found"}
 
 
