@@ -206,10 +206,16 @@ class Blockchain:
                 client.execute('CREATE TABLE IF NOT EXISTS blockchain_ledger (id INTEGER PRIMARY KEY, chain_data TEXT, pending_transactions TEXT, participants TEXT, hmac TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
                 client.execute('INSERT OR REPLACE INTO blockchain_ledger (id, chain_data, pending_transactions, participants, hmac, updated_at) VALUES (1, ?, ?, ?, ?, datetime("now"))', [json_str, json.dumps(self.pending_transactions), json.dumps(self.participants), hmac_val])
                 logger.info('Ledger saved to Turso DB (%s blocks)', len(self.chain))
+            except Exception as e:
+                logger.error(f'Failed to save to Turso: {type(e).__name__}: {e}')
+                self._save_fallback()
             finally:
-                client.close()
+                try:
+                    client.close()
+                except:
+                    pass
         except Exception as e:
-            logger.error(f'Failed to save to Turso: {e}')
+            logger.error(f'Failed to connect to Turso: {type(e).__name__}: {e}')
             self._save_fallback()
     
     def _save_fallback(self):

@@ -2693,6 +2693,20 @@ def startup_event():
                 except Exception as e:
                     print(f"Warning: Error creating table: {e}")
             
+            # Verify tables exist
+            try:
+                result = client.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = [row[0] for row in result.rows] if hasattr(result, 'rows') else []
+                print(f"Turso tables found: {tables}")
+                required_tables = ['voters', 'election_officials', 'admins', 'positions', 'candidates', 'votes', 'blockchain_ledger']
+                missing = [t for t in required_tables if t not in tables]
+                if missing:
+                    print(f"WARNING: Missing tables: {missing}")
+                else:
+                    print("All required tables verified!")
+            except Exception as e:
+                print(f"Warning: Could not verify tables: {e}")
+            
             client.close()
             print("Turso database tables created/verified")
         else:
