@@ -38,6 +38,9 @@ engine = None
 SessionLocal = None
 Base = declarative_base()
 
+# Token Persistence
+TOKEN_FILE = "tokens.json"
+
 def load_tokens():
     """Load tokens from JSON file if exists"""
     try:
