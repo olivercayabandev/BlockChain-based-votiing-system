@@ -246,7 +246,7 @@ class Blockchain:
                 
                 # Parse result - libsql_client returns different formats
                 rows = None
-                if hasattr(result, 'rows'):
+                if hasattr(result, "rows"):
                     rows = result.rows
                 elif isinstance(result, list):
                     rows = result
