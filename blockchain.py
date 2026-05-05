@@ -244,20 +244,14 @@ class Blockchain:
                 client.execute('CREATE TABLE IF NOT EXISTS blockchain_ledger (id INTEGER PRIMARY KEY, chain_data TEXT, pending_transactions TEXT, participants TEXT, hmac TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
                 result = client.execute('SELECT chain_data, pending_transactions, participants, hmac FROM blockchain_ledger WHERE id = 1')
                 
-                # Parse result - libsql_client returns different formats
-                rows = None
-                if hasattr(result, "rows"):
+                # Parse result - try different formats
+                rows = []
+                if hasattr(result, 'rows'):
                     rows = result.rows
                 elif isinstance(result, list):
                     rows = result
                 elif isinstance(result, dict):
-                    # Try different possible keys
-                    if 'rows' in result:
-                        rows = result['rows']
-                    elif 'result' in result:
-                        rows = result['result']
-                    elif 'data' in result:
-                        rows = result['data']
+                    rows = result.get('rows', result.get('data', result.get('result', [])))
                 
                 if rows and len(rows) > 0:
                     row = rows[0]
