@@ -217,8 +217,6 @@ class Blockchain:
         except Exception as e:
             logger.error(f'Failed to connect to Turso: {type(e).__name__}: {e}')
             self._save_fallback()
-    
-    def _save_fallback(self):
         data = {
             'chain': [block.to_dict() for block in self.chain],
             'pending_transactions': self.pending_transactions,
