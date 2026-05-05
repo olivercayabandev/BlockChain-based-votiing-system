@@ -2322,6 +2322,16 @@ def verify_transaction(tx_hash: str):
     return {"found": False, "message": "Transaction not found"}
 
 
+@app.get("/api/debug/blockchain-status")
+def debug_blockchain_status():
+    """Debug endpoint to check blockchain status"""
+    return {
+        "blocks": blockchain.get_block_count(),
+        "is_valid": blockchain.is_chain_valid(),
+        "participants": blockchain.participants,
+        "pending": len(blockchain.pending_transactions)
+    }
+
 @app.get("/api/debug/token-status")
 def debug_token_status(token: str):
     """Debug endpoint to check token status"""
