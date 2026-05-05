@@ -172,107 +172,93 @@ async def startup_create_tables():
             client = TURSO_CLIENT(TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
             
             # Create voters table
-            client.execute('''
-                CREATE TABLE IF NOT EXISTS voters (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    resident_id TEXT UNIQUE NOT NULL,
-                    name TEXT NOT NULL,
-                    id_type TEXT,
-                    id_number TEXT,
-                    id_photo_front TEXT,
-                    id_photo_back TEXT,
-                    verification_status TEXT DEFAULT 'pending',
-                    rejection_reason TEXT,
-                    admin_notes TEXT,
-                    verified_by TEXT,
-                    is_verified BOOLEAN DEFAULT 0,
-                    is_approved BOOLEAN DEFAULT 0,
-                    is_active BOOLEAN DEFAULT 0,
-                    consent_given BOOLEAN DEFAULT 0,
-                    is_flagged BOOLEAN DEFAULT 0,
-                    pin_hash TEXT,
-                    pin_set_at DATETIME,
-                    pin_setup_token TEXT,
-                    pin_setup_expires DATETIME,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    approved_at DATETIME,
-                    gas_balance FLOAT DEFAULT 1.0
-                )
-            ''')
+            client.execute("""CREATE TABLE IF NOT EXISTS voters (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                resident_id TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                id_type TEXT,
+                id_number TEXT,
+                id_photo_front TEXT,
+                id_photo_back TEXT,
+                verification_status TEXT DEFAULT 'pending',
+                rejection_reason TEXT,
+                admin_notes TEXT,
+                verified_by TEXT,
+                is_verified INTEGER DEFAULT 0,
+                is_approved INTEGER DEFAULT 0,
+                is_active INTEGER DEFAULT 0,
+                consent_given INTEGER DEFAULT 0,
+                is_flagged INTEGER DEFAULT 0,
+                pin_hash TEXT,
+                pin_set_at DATETIME,
+                pin_setup_token TEXT,
+                pin_setup_expires DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                approved_at DATETIME,
+                gas_balance FLOAT DEFAULT 1.0
+            )""")
             
             # Create candidates table
-            client.execute('''
-                CREATE TABLE IF NOT EXISTS candidates (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    candidate_id TEXT UNIQUE NOT NULL,
-                    name TEXT NOT NULL,
-                    position_id TEXT NOT NULL,
-                    party TEXT,
-                    photo TEXT,
-                    votes INTEGER DEFAULT 0,
-                    is_active BOOLEAN DEFAULT 1,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+            client.execute("""CREATE TABLE IF NOT EXISTS candidates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                candidate_id TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                position_id TEXT NOT NULL,
+                party TEXT,
+                photo TEXT,
+                votes INTEGER DEFAULT 0,
+                is_active INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )""")
             
             # Create officials table
-            client.execute('''
-                CREATE TABLE IF NOT EXISTS officials (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    official_id TEXT UNIQUE NOT NULL,
-                    name TEXT NOT NULL,
-                    role TEXT,
-                    pin_hash TEXT,
-                    is_active BOOLEAN DEFAULT 1,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+            client.execute("""CREATE TABLE IF NOT EXISTS officials (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                official_id TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                role TEXT,
+                pin_hash TEXT,
+                is_active INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )""")
             
             # Create admins table
-            client.execute('''
-                CREATE TABLE IF NOT EXISTS admins (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    is_pin_set BOOLEAN DEFAULT 1,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+            client.execute("""CREATE TABLE IF NOT EXISTS admins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                is_pin_set INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )""")
             
             # Create positions table
-            client.execute('''
-                CREATE TABLE IF NOT EXISTS positions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    position_id TEXT UNIQUE NOT NULL,
-                    title TEXT NOT NULL,
-                    description TEXT,
-                    max_votes INTEGER DEFAULT 1,
-                    is_active BOOLEAN DEFAULT 1
-                )
-            ''')
+            client.execute("""CREATE TABLE IF NOT EXISTS positions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                position_id TEXT UNIQUE NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                max_votes INTEGER DEFAULT 1,
+                is_active INTEGER DEFAULT 1
+            )""")
             
             # Create votes table
-            client.execute('''
-                CREATE TABLE IF NOT EXISTS votes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    voter_id TEXT NOT NULL,
-                    candidate_id TEXT NOT NULL,
-                    position_id TEXT NOT NULL,
-                    voted_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+            client.execute("""CREATE TABLE IF NOT EXISTS votes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                voter_id TEXT NOT NULL,
+                candidate_id TEXT NOT NULL,
+                position_id TEXT NOT NULL,
+                voted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )""")
             
             # Create blockchain_ledger table
-            client.execute('''
-                CREATE TABLE IF NOT EXISTS blockchain_ledger (
-                    id INTEGER PRIMARY KEY,
-                    chain_data TEXT,
-                    pending_transactions TEXT,
-                    participants TEXT,
-                    hmac TEXT,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+            client.execute("""CREATE TABLE IF NOT EXISTS blockchain_ledger (
+                id INTEGER PRIMARY KEY,
+                chain_data TEXT,
+                pending_transactions TEXT,
+                participants TEXT,
+                hmac TEXT,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )""")
             
             client.close()
             logger.info("Database tables created/verified successfully")
@@ -2708,19 +2694,19 @@ def startup_event():
                     name TEXT NOT NULL,
                     id_type TEXT, id_number TEXT, id_photo_front TEXT, id_photo_back TEXT,
                     verification_status TEXT DEFAULT 'pending', rejection_reason TEXT, admin_notes TEXT, verified_by TEXT,
-                    is_verified BOOLEAN DEFAULT 0, is_approved BOOLEAN DEFAULT 0, is_active BOOLEAN DEFAULT 0,
-                    consent_given BOOLEAN DEFAULT 0, is_flagged BOOLEAN DEFAULT 0,
+                    is_verified INTEGER DEFAULT 0, is_approved INTEGER DEFAULT 0, is_active INTEGER DEFAULT 0,
+                    consent_given INTEGER DEFAULT 0, is_flagged INTEGER DEFAULT 0,
                     pin_hash TEXT, pin_set_at TEXT, pin_setup_token TEXT, pin_setup_expires TEXT,
                     created_at TEXT, approved_at TEXT, gas_balance FLOAT DEFAULT 1.0
                 )""",
                 """CREATE TABLE IF NOT EXISTS election_officials (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, official_id TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
-                    pin_hash TEXT, role TEXT DEFAULT 'officer', is_active BOOLEAN DEFAULT 0, is_pin_set BOOLEAN DEFAULT 0,
+                    pin_hash TEXT, role TEXT DEFAULT 'officer', is_active INTEGER DEFAULT 0, is_pin_set INTEGER DEFAULT 0,
                     failed_attempts INTEGER DEFAULT 0, locked_until TEXT, created_at TEXT, last_login TEXT
                 )""",
                 """CREATE TABLE IF NOT EXISTS admins (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
-                    is_active BOOLEAN DEFAULT 1, failed_attempts INTEGER DEFAULT 0, locked_until TEXT,
+                    is_active INTEGER DEFAULT 1, failed_attempts INTEGER DEFAULT 0, locked_until TEXT,
                     created_at TEXT, last_login TEXT
                 )""",
                 """CREATE TABLE IF NOT EXISTS positions (
@@ -2732,7 +2718,7 @@ def startup_event():
                 )""",
                 """CREATE TABLE IF NOT EXISTS votes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, voter_resident_id TEXT NOT NULL, candidate_id TEXT NOT NULL,
-                    position_id INTEGER, timestamp TEXT, transaction_hash TEXT, is_verified BOOLEAN DEFAULT 0
+                    position_id INTEGER, timestamp TEXT, transaction_hash TEXT, is_verified INTEGER DEFAULT 0
                 )""",
                 """CREATE TABLE IF NOT EXISTS blockchain_ledger (
                     id INTEGER PRIMARY KEY, chain_data TEXT, pending_transactions TEXT, participants TEXT,
