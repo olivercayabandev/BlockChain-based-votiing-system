@@ -630,6 +630,24 @@ seed_data()
 
 from blockchain import blockchain
 
+# Sync all voter gas balances to blockchain participants dict
+def sync_gas_balances():
+    """Load gas balances from database into blockchain participants dict"""
+    db = SessionLocal()
+    try:
+        voters = db.query(Voter).all()
+        for v in voters:
+            if v.resident_id and v.gas_balance is not None:
+                blockchain.participants[v.resident_id] = v.gas_balance
+        print(f"Synced {len(blockchain.participants)} voter gas balances to blockchain")
+        blockchain.save_to_db()
+    except Exception as e:
+        print(f"Gas sync error: {e}")
+    finally:
+        db.close()
+
+sync_gas_balances()
+
 
 class VoterRegistration(BaseModel):
     resident_id: str
@@ -1916,6 +1934,9 @@ def vote(request: VoteRequest, db: SessionLocal = Depends(get_db)):
     
     if voter.gas_balance < 0.05:
         raise HTTPException(status_code=400, detail="Insufficient gas balance")
+    
+    # Sync database gas balance to blockchain participants dict
+    blockchain.participants[voter.resident_id] = voter.gas_balance
     
     tx_data = {
         "type": "vote",
