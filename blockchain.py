@@ -253,6 +253,8 @@ class Blockchain:
                 elif isinstance(result, dict):
                     rows = result.get('rows', result.get('data', result.get('result', [])))
                 
+                logger.info(f'Turso query returned {len(rows)} rows')
+                
                 if rows and len(rows) > 0:
                     row = rows[0]
                     try:
