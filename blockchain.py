@@ -16,7 +16,7 @@ load_dotenv()
 
 def calculate_file_hmac(data: str) -> str:
     """Calculate HMAC-SHA256 for data integrity"""
-    secret = os.getenv("TURSO_AUTH_TOKEN", "change-this-in-production!")
+    secret = os.getenv("HMAC_SECRET", "blockchain-voting-hmac-secret-2026-change-in-production!")
     return hmac.new(
         secret.encode(),
         data.encode(),

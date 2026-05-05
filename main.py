@@ -52,7 +52,7 @@ def save_tokens():
         with open(TOKEN_FILE, "w") as f:
             json.dump(tokens, f)
     except Exception as e:
-        Offer(f"Error saving tokens: {e}")
+        print(f"Error saving tokens: {e}")
 
 # Initialize tokens
 tokens = load_tokens()
@@ -494,29 +494,25 @@ def seed_data():
     
     db = SessionLocal()
     try:
-        # Seed admin account - update if exists, create if not
-        admin = db.query(Voter).filter(Voter.resident_id == "ADMIN001").first()
+        # Seed admin account in Admin table
+        admin = db.query(Admin).filter(Admin.username == "admin").first()
         if not admin:
-            admin = Voter(
-                resident_id="ADMIN001",
-                name="Administrator",
-                id_type="admin",
-                id_number="ADMIN001",
-                verification_status="approved",
-                is_verified=True,
-                is_approved=True,
+            password = "admin123"  # Default password for presentation
+            password_hash = hash_pin(password)
+            admin = Admin(
+                username="admin",
+                password_hash=password_hash,
                 is_active=True,
-                consent_given=True,
-                gas_balance=10.0  # Admin gets 10.0 gas
+                is_pin_set=True,
+                created_at=datetime.utcnow().isoformat()
             )
             db.add(admin)
+            print(f"Admin account created: admin/admin123")
         else:
-            admin.id_type = "admin"
-            admin.id_number = "ADMIN001"
-            admin.is_verified = True
-            admin.is_approved = True
+            # Reset password to admin123 for presentation
+            admin.password_hash = hash_pin("admin123")
             admin.is_active = True
-            admin.name = "Administrator"
+            admin.is_pin_set = True
         
         # Seed test user 2026-0001 - update if exists, create if not
         test_user = db.query(Voter).filter(Voter.resident_id == "2026-0001").first()
@@ -524,24 +520,29 @@ def seed_data():
             test_user = Voter(
                 resident_id="2026-0001",
                 name="Test Resident",
-                id_type="resident_id",
-                id_number="2026-0001",
+                id_type="PhilSys",
+                id_number="1234-5678-9012",
                 verification_status="approved",
                 is_verified=True,
                 is_approved=True,
                 is_active=True,
                 consent_given=True,
-                gas_balance=1.0  # Default gas
+                gas_balance=1.0,
+                pin_hash=hash_pin("123456"),
+                pin_set_at=datetime.utcnow().isoformat()
             )
             db.add(test_user)
         else:
-            test_user.id_type = "resident_id"
-            test_user.id_number = "2026-0001"
             test_user.verification_status = "approved"
             test_user.is_verified = True
             test_user.is_approved = True
             test_user.is_active = True
             test_user.name = "Test Resident"
+            test_user.id_type = "PhilSys"
+            test_user.id_number = "1234-5678-9012"
+            if not test_user.pin_hash:
+                test_user.pin_hash = hash_pin("123456")
+                test_user.pin_set_at = datetime.utcnow().isoformat()
         
         # Seed 5 election officials
         officials = [
