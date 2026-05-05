@@ -199,21 +199,12 @@ export function VerificationTool({ onSwitchPage }) {
                 {toast.type === 'success' ? '✓' : '⚠'}
               </span>
               <span>{toast.message}</span>
-            </div>
-          ))}
-
-          <button
-            style={{ ...styles.button, ...styles.buttonSecondary }}
-            onClick={() => onSwitchPage('home')}
-          >
-            Back to Dashboard
-          </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-VerificationTool.propTypes = {
-  onSwitchPage: PropTypes.func.isRequired,
-};
+  VerificationTool.propTypes = {
+    onSwitchPage: PropTypes.func.isRequired,
+  };

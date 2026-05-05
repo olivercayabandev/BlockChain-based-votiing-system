@@ -169,6 +169,7 @@ export function BlockchainVisualizer({ onSwitchPage }) {
           </h1>
           <p style={styles.subtitle}>Immutable voting record</p>
         </div>
+      </div>
         <button
           style={styles.backButton}
           onClick={() => onSwitchPage('home')}

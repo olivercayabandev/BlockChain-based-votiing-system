@@ -202,12 +202,14 @@ class Blockchain:
                     'participants': self.participants
                 }
                 json_str = json.dumps(data, indent=2)
+                pending_str = json.dumps(self.pending_transactions)
+                participants_str = json.dumps(self.participants)
                 hmac_val = calculate_file_hmac(json_str)
                 client.execute('CREATE TABLE IF NOT EXISTS blockchain_ledger (id INTEGER PRIMARY KEY, chain_data TEXT, pending_transactions TEXT, participants TEXT, hmac TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
-                # Use string formatting for Turso compatibility
-                sql = f"""INSERT OR REPLACE INTO blockchain_ledger (id, chain_data, pending_transactions, participants, hmac, updated_at) 
-                          VALUES (1, '{json_str}', '{json.dumps(self.pending_transactions)}', '{json.dumps(self.participants)}', '{hmac_val}', datetime("now"))"""
-                client.execute(sql)
+                client.execute(
+                    'INSERT OR REPLACE INTO blockchain_ledger (id, chain_data, pending_transactions, participants, hmac, updated_at) VALUES (1, ?, ?, ?, ?, datetime("now"))',
+                    [json_str, pending_str, participants_str, hmac_val]
+                )
                 logger.info('Ledger saved to Turso DB (%s blocks)', len(self.chain))
             except Exception as e:
                 logger.error(f'Failed to save to Turso: {type(e).__name__}: {e}')
