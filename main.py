@@ -101,8 +101,15 @@ if DATABASE_URL:
         USE_TURSO = True
         TURSO_CLIENT = create_client_sync
         
-        # NOTE: We do NOT create a SQLAlchemy engine - using libsql_client only
-        # The startup event will create all tables via libsql_client
+        # Re-add SQLAlchemy engine for ORM (using local SQLite for compatibility)
+        # The ORM models (Voter, Candidate, etc.) will use SQLite
+        # Blockchain data uses Turso via libsql_client
+        engine = create_engine("sqlite:///./votechain.db", connect_args={"check_same_thread": False})
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        
+        # Create tables in local SQLite for ORM
+        Base.metadata.create_all(bind=engine)
+        print("SQLAlchemy tables created in local SQLite")
         
     except Exception as e:
         print("ERROR: Turso connection failed: " + str(e))
@@ -729,19 +736,41 @@ from blockchain import blockchain
 
 # Sync all voter gas balances to blockchain participants dict
 def sync_gas_balances():
-    """Load gas balances from database into blockchain participants dict"""
-    db = SessionLocal()
+    """Load gas balances from Turso database into blockchain participants dict"""
+    if not (USE_TURSO and TURSO_CLIENT):
+        print("Not using Turso - skipping gas sync")
+        return
+    
     try:
-        voters = db.query(Voter).all()
-        for v in voters:
-            if v.resident_id and v.gas_balance is not None:
-                blockchain.participants[v.resident_id] = v.gas_balance
+        client = TURSO_CLIENT(TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
+        result = client.execute('SELECT resident_id, gas_balance FROM voters WHERE gas_balance IS NOT NULL')
+        
+        # Parse result
+        rows = []
+        if hasattr(result, 'rows'):
+            rows = result.rows
+        elif isinstance(result, list):
+            rows = result
+        elif isinstance(result, dict):
+            rows = result.get('rows', [])
+        
+        for row in rows:
+            if isinstance(row, (tuple, list)) and len(row) >= 2:
+                resident_id = row[0]
+                gas_balance = row[1]
+                if resident_id:
+                    blockchain.participants[resident_id] = gas_balance
+            elif isinstance(row, dict):
+                resident_id = row.get('resident_id')
+                gas_balance = row.get('gas_balance')
+                if resident_id:
+                    blockchain.participants[resident_id] = gas_balance
+        
         print(f"Synced {len(blockchain.participants)} voter gas balances to blockchain")
         blockchain.save_to_db()
+        client.close()
     except Exception as e:
         print(f"Gas sync error: {e}")
-    finally:
-        db.close()
 
 sync_gas_balances()
 

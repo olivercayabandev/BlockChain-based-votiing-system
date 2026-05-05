@@ -206,10 +206,10 @@ class Blockchain:
                 participants_str = json.dumps(self.participants)
                 hmac_val = calculate_file_hmac(json_str)
                 
-                # Create table
+                # Create table and insert - don't check return value
                 client.execute('CREATE TABLE IF NOT EXISTS blockchain_ledger (id INTEGER PRIMARY KEY, chain_data TEXT, pending_transactions TEXT, participants TEXT, hmac TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
                 
-                # Insert with parameters
+                # Insert with parameters - use positional parameters to avoid issues
                 client.execute(
                     'INSERT OR REPLACE INTO blockchain_ledger (id, chain_data, pending_transactions, participants, hmac, updated_at) VALUES (1, ?, ?, ?, ?, datetime("now"))',
                     [json_str, pending_str, participants_str, hmac_val]
@@ -255,12 +255,15 @@ class Blockchain:
                 
                 # Parse result - libsql_client returns different formats
                 rows = []
-                if hasattr(result, 'rows'):
-                    rows = result.rows
+                if isinstance(result, dict):
+                    # Might be {'result': [...]} or {'rows': [...]}
+                    rows = result.get('rows', result.get('result', []))
+                    if not rows and 'result' in result:
+                        rows = result['result']
                 elif isinstance(result, list):
                     rows = result
-                elif isinstance(result, dict):
-                    rows = result.get('rows', result.get('data', []))
+                elif hasattr(result, 'rows'):
+                    rows = list(result.rows)
                 
                 logger.info(f'Turso query returned {len(rows)} rows')
                 
