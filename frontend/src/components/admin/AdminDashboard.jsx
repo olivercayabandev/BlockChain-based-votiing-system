@@ -301,8 +301,8 @@ const styles = {
         <ElectionSetup onUpdate={fetchData} />
       )}
 
-      {activeTab === 'blockchain' && <BlockchainVisualizer onSwitchPage={handleNavigation} />}
-      {activeTab === 'verify' && <VerificationTool onSwitchPage={handleNavigation} />}
+      {activeTab === 'blockchain' && <BlockchainVisualizer onSwitchPage={onSwitchPage} />}
+      {activeTab === 'verify' && <VerificationTool onSwitchPage={onSwitchPage} />}
       {activeTab === 'reset' && <SystemReset token={adminToken} />}
     </div>
   );
