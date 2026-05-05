@@ -626,7 +626,7 @@ def get_db():
 # Run migration and seeding on startup
 migrate_old_data()
 ensure_columns()
-seed_data()
+# seed_data() moved to startup_event() after table creation
 
 from blockchain import blockchain
 
@@ -2711,9 +2711,11 @@ def startup_event():
         except:
             pass
     
+    # Seed data AFTER tables are created
+    seed_data()
+    
     # Initialize blockchain (now stored in DB instead of ledger.json)
     # No need to load_from_disk() anymore
-    seed_data()
     
     # Sync blockchain participants with database
     db = SessionLocal()
