@@ -78,12 +78,11 @@ TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
 USE_TURSO = False
 TURSO_CLIENT = None
 
-if not DATABASE_URL:
-    print("WARNING: TURSO_URL not set, falling back to SQLite")
-    DATABASE_URL = "sqlite:///./votechain.db"
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    # For Turso, use libsql-client for raw queries
+# Define Base early
+Base = declarative_base()
+
+# ONLY use Turso - no SQLite fallback
+if DATABASE_URL:
     try:
         from libsql_client import create_client_sync
         
@@ -95,32 +94,24 @@ else:
         
         # Test connection to Turso
         test_client = create_client_sync(TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN if TURSO_AUTH_TOKEN else None)
-        test_result = test_client.execute("SELECT 1")
+        test_client.execute("SELECT 1")
         test_client.close()
         
         print("Connected to Turso! URL: " + str(TURSO_DB_URL[:50]) + "...")
         USE_TURSO = True
-        TURSO_CLIENT = create_client_sync  # Store the class for later use
+        TURSO_CLIENT = create_client_sync
         
-        # Also create tables in local SQLite for SQLAlchemy ORM compatibility
-        DATABASE_URL = "sqlite:///./votechain.db"
-        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-        Base.metadata.create_all(bind=engine)
-        print("SQLite tables created for SQLAlchemy ORM compatibility")
+        # Create a minimal engine for SQLAlchemy (we won't use it for queries)
+        engine = create_engine("sqlite:///./votechain.db", connect_args={"check_same_thread": False})
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         
-    except ImportError as e:
-        print("WARNING: libsql-client not installed: " + str(e))
-        print("Falling back to SQLite")
-        DATABASE_URL = "sqlite:///./votechain.db"
-        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
     except Exception as e:
-        print("WARNING: Turso connection failed: " + str(e))
-        print("Falling back to SQLite")
-        DATABASE_URL = "sqlite:///./votechain.db"
-        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+        print("ERROR: Turso connection failed: " + str(e))
+        print("Please set TURSO_URL and TURSO_AUTH_TOKEN in .env")
+        raise
+else:
+    print("ERROR: TURSO_URL not set. Please configure Turso database.")
+    raise ValueError("TURSO_URL is required")
 
 # Turso query helper - use libsql-client for queries when connected
 def turso_query(sql, params=None):
@@ -2568,12 +2559,7 @@ def startup_event():
         TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
         
         if TURSO_URL:
-            # Convert libsql:// to https:// for HTTP-based client
-            if TURSO_URL.startswith("libsql://"):
-                db_url = TURSO_URL.replace("libsql://", "https://", 1)
-            else:
-                db_url = TURSO_URL
-            
+            db_url = TURSO_URL.replace("libsql://", "https://", 1) if TURSO_URL.startswith("libsql://") else TURSO_URL
             client = create_client_sync(db_url, auth_token=TURSO_AUTH_TOKEN)
             
             # Create tables using raw SQL for Turso
@@ -2582,110 +2568,52 @@ def startup_event():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     resident_id TEXT UNIQUE NOT NULL,
                     name TEXT NOT NULL,
-                    id_type TEXT,
-                    id_number TEXT,
-                    id_photo_front TEXT,
-                    id_photo_back TEXT,
-                    verification_status TEXT DEFAULT 'pending',
-                    rejection_reason TEXT,
-                    admin_notes TEXT,
-                    verified_by TEXT,
-                    is_verified BOOLEAN DEFAULT 0,
-                    is_approved BOOLEAN DEFAULT 0,
-                    is_active BOOLEAN DEFAULT 0,
-                    consent_given BOOLEAN DEFAULT 0,
-                    is_flagged BOOLEAN DEFAULT 0,
-                    pin_hash TEXT,
-                    pin_set_at TEXT,
-                    pin_setup_token TEXT,
-                    pin_setup_expires TEXT,
-                    created_at TEXT,
-                    approved_at TEXT,
-                    gas_balance FLOAT DEFAULT 1.0
+                    id_type TEXT, id_number TEXT, id_photo_front TEXT, id_photo_back TEXT,
+                    verification_status TEXT DEFAULT 'pending', rejection_reason TEXT, admin_notes TEXT, verified_by TEXT,
+                    is_verified BOOLEAN DEFAULT 0, is_approved BOOLEAN DEFAULT 0, is_active BOOLEAN DEFAULT 0,
+                    consent_given BOOLEAN DEFAULT 0, is_flagged BOOLEAN DEFAULT 0,
+                    pin_hash TEXT, pin_set_at TEXT, pin_setup_token TEXT, pin_setup_expires TEXT,
+                    created_at TEXT, approved_at TEXT, gas_balance FLOAT DEFAULT 1.0
                 )""",
                 """CREATE TABLE IF NOT EXISTS election_officials (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    official_id TEXT UNIQUE NOT NULL,
-                    name TEXT NOT NULL,
-                    pin_hash TEXT,
-                    role TEXT DEFAULT 'officer',
-                    is_active BOOLEAN DEFAULT 0,
-                    is_pin_set BOOLEAN DEFAULT 0,
-                    failed_attempts INTEGER DEFAULT 0,
-                    locked_until TEXT,
-                    created_at TEXT,
-                    last_login TEXT
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, official_id TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
+                    pin_hash TEXT, role TEXT DEFAULT 'officer', is_active BOOLEAN DEFAULT 0, is_pin_set BOOLEAN DEFAULT 0,
+                    failed_attempts INTEGER DEFAULT 0, locked_until TEXT, created_at TEXT, last_login TEXT
                 )""",
                 """CREATE TABLE IF NOT EXISTS admins (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    is_active BOOLEAN DEFAULT 1,
-                    failed_attempts INTEGER DEFAULT 0,
-                    locked_until TEXT,
-                    created_at TEXT,
-                    last_login TEXT
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
+                    is_active BOOLEAN DEFAULT 1, failed_attempts INTEGER DEFAULT 0, locked_until TEXT,
+                    created_at TEXT, last_login TEXT
                 )""",
                 """CREATE TABLE IF NOT EXISTS positions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
-                    max_votes INTEGER DEFAULT 1
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, max_votes INTEGER DEFAULT 1
                 )""",
                 """CREATE TABLE IF NOT EXISTS candidates (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    candidate_id TEXT UNIQUE NOT NULL,
-                    name TEXT NOT NULL,
-                    party TEXT,
-                    description TEXT,
-                    position_id INTEGER
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
+                    party TEXT, description TEXT, position_id INTEGER
                 )""",
                 """CREATE TABLE IF NOT EXISTS votes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    voter_resident_id TEXT NOT NULL,
-                    candidate_id TEXT NOT NULL,
-                    position_id INTEGER,
-                    timestamp TEXT,
-                    transaction_hash TEXT,
-                    is_verified BOOLEAN DEFAULT 0
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, voter_resident_id TEXT NOT NULL, candidate_id TEXT NOT NULL,
+                    position_id INTEGER, timestamp TEXT, transaction_hash TEXT, is_verified BOOLEAN DEFAULT 0
                 )""",
                 """CREATE TABLE IF NOT EXISTS blockchain_ledger (
-                    id INTEGER PRIMARY KEY,
-                    chain_data TEXT,
-                    pending_transactions TEXT,
-                    participants TEXT,
-                    hmac TEXT,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    id INTEGER PRIMARY KEY, chain_data TEXT, pending_transactions TEXT, participants TEXT,
+                    hmac TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )""",
                 """CREATE TABLE IF NOT EXISTS review_locks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    voter_resident_id TEXT UNIQUE NOT NULL,
-                    official_id TEXT NOT NULL,
-                    locked_at TEXT
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, voter_resident_id TEXT UNIQUE NOT NULL,
+                    official_id TEXT NOT NULL, locked_at TEXT
                 )""",
                 """CREATE TABLE IF NOT EXISTS vote_tokens (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    token TEXT UNIQUE NOT NULL,
-                    voter_resident_id TEXT NOT NULL,
-                    candidate_id TEXT NOT NULL,
-                    position_id INTEGER,
-                    created_at TEXT,
-                    expires_at TEXT,
-                    used INTEGER DEFAULT 0
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT UNIQUE NOT NULL, voter_resident_id TEXT NOT NULL,
+                    candidate_id TEXT NOT NULL, position_id INTEGER, created_at TEXT, expires_at TEXT, used INTEGER DEFAULT 0
                 )""",
                 """CREATE TABLE IF NOT EXISTS voter_activity (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    voter_resident_id TEXT NOT NULL,
-                    activity_type TEXT NOT NULL,
-                    description TEXT,
-                    timestamp TEXT,
-                    metadata TEXT
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, voter_resident_id TEXT NOT NULL, activity_type TEXT NOT NULL,
+                    description TEXT, timestamp TEXT, metadata TEXT
                 )""",
                 """CREATE TABLE IF NOT EXISTS activity_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    action TEXT NOT NULL,
-                    actor TEXT,
-                    details TEXT,
-                    timestamp TEXT
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, actor TEXT, details TEXT, timestamp TEXT
                 )"""
             ]
             
@@ -2695,37 +2623,14 @@ def startup_event():
                 except Exception as e:
                     print(f"Warning: Error creating table: {e}")
             
-            # Verify tables exist
-            try:
-                result = client.execute("SELECT name FROM sqlite_master WHERE type='table'")
-                tables = [row[0] for row in result.rows] if hasattr(result, 'rows') else []
-                print(f"Turso tables found: {tables}")
-                required_tables = ['voters', 'election_officials', 'admins', 'positions', 'candidates', 'votes', 'blockchain_ledger']
-                missing = [t for t in required_tables if t not in tables]
-                if missing:
-                    print(f"WARNING: Missing tables: {missing}")
-                else:
-                    print("All required tables verified!")
-            except Exception as e:
-                print(f"Warning: Could not verify tables: {e}")
-            
             client.close()
-            print("Turso database tables created/verified")
+            print("Turso tables created/verified")
         else:
-            # SQLite fallback
-            Base.metadata.create_all(bind=engine)
-            print("SQLite database tables created/verified")
+            raise ValueError("No TURSO_URL found")
             
-    except ImportError:
-        # libsql_client not available, use SQLite
-        Base.metadata.create_all(bind=engine)
-        print("SQLite database tables created/verified (libsql_client not installed)")
     except Exception as e:
-        print(f"Warning: Could not create tables: {e}")
-        try:
-            Base.metadata.create_all(bind=engine)
-        except:
-            pass
+        print(f"ERROR: Turso table creation failed: {e}")
+        raise
     
     # Seed data AFTER tables are created
     seed_data()
