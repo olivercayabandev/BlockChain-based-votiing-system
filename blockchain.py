@@ -223,9 +223,10 @@ class Blockchain:
                 'pending_transactions': self.pending_transactions,
                 'participants': self.participants
             }
-            json_str = json.dumps(data, indent=2)
-            pending_str = json.dumps(self.pending_transactions)
-            participants_str = json.dumps(self.participants)
+            # Use compact JSON with sorted keys for consistent HMAC calculation
+            json_str = json.dumps(data, sort_keys=True, separators=(',', ':'))
+            pending_str = json.dumps(self.pending_transactions, sort_keys=True, separators=(',', ':'))
+            participants_str = json.dumps(self.participants, sort_keys=True, separators=(',', ':'))
             hmac_val = calculate_file_hmac(json_str)
             
             TURSO_URL = os.getenv('TURSO_URL', '')
@@ -234,6 +235,48 @@ class Blockchain:
             if not TURSO_URL:
                 logger.warning('TURSO_URL not set')
                 self._save_fallback()
+                return
+            
+            # Convert libsql:// to https://
+            if TURSO_URL.startswith('libsql://'):
+                TURSO_URL = TURSO_URL.replace('libsql://', 'https://', 1)
+            
+            url = f"{TURSO_URL}/v2/pipeline"
+            headers = {
+                "Authorization": f"Bearer {TURSO_AUTH_TOKEN}",
+                "Content-Type": "application/json"
+            }
+            
+            # Build pipeline: delete old, insert new
+            pipeline = [
+                {
+                    "type": "execute",
+                    "stmt": {"sql": "DELETE FROM blockchain_ledger WHERE id = 1"}
+                },
+                {
+                    "type": "execute",
+                    "stmt": {
+                        "sql": "INSERT INTO blockchain_ledger (id, chain_data, pending_transactions, participants, hmac, updated_at) VALUES (1, ?, ?, ?, ?, datetime('now'))",
+                        "args": [
+                            {"type": "text", "value": json_str},
+                            {"type": "text", "value": pending_str},
+                            {"type": "text", "value": participants_str},
+                            {"type": "text", "value": hmac_val}
+                        ]
+                    }
+                },
+                {"type": "close"}
+            ]
+            
+            payload = {"requests": pipeline}
+            
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            logger.info('Ledger saved to Turso DB (%s blocks)', len(self.chain))
+        except Exception as e:
+            logger.error(f'Failed to save to Turso: {type(e).__name__}: {e}')
+            self._save_fallback()
                 return
             
             # Convert libsql:// to https://
@@ -304,6 +347,111 @@ class Blockchain:
             if not TURSO_URL:
                 logger.warning('TURSO_URL not set, using local fallback')
                 self._load_fallback()
+                return
+            
+            # Convert libsql:// to https://
+            if TURSO_URL.startswith('libsql://'):
+                TURSO_URL = TURSO_URL.replace('libsql://', 'https://', 1)
+            
+            url = f"{TURSO_URL}/v2/pipeline"
+            headers = {
+                "Authorization": f"Bearer {TURSO_AUTH_TOKEN}",
+                "Content-Type": "application/json"
+            }
+            
+            # Create table if not exists
+            create_payload = {"requests": [
+                {"type": "execute", "stmt": {"sql": "CREATE TABLE IF NOT EXISTS blockchain_ledger (id INTEGER PRIMARY KEY, chain_data TEXT, pending_transactions TEXT, participants TEXT, hmac TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"}},
+                {"type": "close"}
+            ]}
+            requests.post(url, json=create_payload, headers=headers, timeout=10)
+            
+            # Query data
+            query_payload = {"requests": [
+                {"type": "execute", "stmt": {"sql": "SELECT chain_data, pending_transactions, participants, hmac FROM blockchain_ledger WHERE id = 1"}},
+                {"type": "close"}
+            ]}
+            
+            response = requests.post(url, json=query_payload, headers=headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Parse response
+            results = data.get('results', [])
+            if not results:
+                logger.info('No ledger found. Creating genesis block...')
+                genesis = self.create_genesis_block()
+                self.chain.append(genesis)
+                self.save_to_db()
+                logger.info('Genesis block created and saved.')
+                return
+            
+            first_result = results[0]
+            if first_result.get('type') == 'error':
+                error_msg = first_result.get('error', {}).get('message', 'Unknown error')
+                raise Exception(f"Turso error: {error_msg}")
+            
+            response_data = first_result.get('response', {})
+            result = response_data.get('result', {})
+            rows = result.get('rows', [])
+            
+            logger.info(f'Turso query returned {len(rows)} rows')
+            
+            if rows and len(rows) > 0:
+                row = rows[0]
+                try:
+                    chain_json = None
+                    pending_json = None
+                    participants_json = None
+                    stored_hmac = None
+                    
+                    # Handle different row formats
+                    if isinstance(row, (tuple, list)):
+                        if len(row) >= 4:
+                            chain_json = row[0]
+                            pending_json = row[1]
+                            participants_json = row[2]
+                            stored_hmac = row[3]
+                    elif isinstance(row, dict):
+                        chain_json = row.get('chain_data')
+                        pending_json = row.get('pending_transactions')
+                        participants_json = row.get('participants')
+                        stored_hmac = row.get('hmac')
+                    
+                    # Ensure chain_json is a string for HMAC calculation
+                    if chain_json:
+                        if isinstance(chain_json, (dict, list)):
+                            chain_json = json.dumps(chain_json, sort_keys=True, separators=(',', ':'))
+                        elif not isinstance(chain_json, str):
+                            chain_json = str(chain_json)
+                    
+                    if stored_hmac and chain_json:
+                        calculated_hmac = calculate_file_hmac(chain_json)
+                        if calculated_hmac != stored_hmac:
+                            logger.error('HMAC mismatch - ledger may be tampered!')
+                            raise Exception('Ledger integrity check failed')
+                    
+                    if chain_json:
+                        data = json.loads(chain_json)
+                        self.chain = [Block.from_dict(block_data) for block_data in data.get('chain', [])]
+                        self.pending_transactions = data.get('pending_transactions', [])
+                        self.participants = data.get('participants', {})
+                        logger.info(f'Ledger loaded: {len(self.chain)} blocks, {len(self.participants)} participants')
+                    else:
+                        raise Exception('No chain data found')
+                except Exception as e:
+                    logger.error(f'Error parsing row data: {e}')
+                    raise
+            else:
+                logger.info('No ledger found. Creating genesis block...')
+                genesis = self.create_genesis_block()
+                self.chain.append(genesis)
+                self.save_to_db()
+                logger.info('Genesis block created and saved.')
+        except Exception as e:
+            logger.error(f'Failed to load from Turso: {type(e).__name__}: {e}')
+            logger.info('Falling back to local backup...')
+            self._load_fallback()
                 return
             
             # Convert libsql:// to https://
